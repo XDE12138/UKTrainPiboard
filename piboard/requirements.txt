@@ -1,0 +1,5 @@
+pygame>=2.0.0
+flask>=2.0.0
+flask-sock>=0.6.0
+requests>=2.25.0
+icalendar>=4.0.0

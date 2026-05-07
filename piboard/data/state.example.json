@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "current_app": "uk_station",
+  "apps": {
+    "uk_station": {
+      "layout": "single",
+      "slots": [
+        "mock"
+      ],
+      "app_settings": {
+        "color_theme": "amber",
+        "animations_enabled": false
+      }
+    },
+    "system_status": {
+      "layout": "single",
+      "slots": [],
+      "app_settings": {}
+    }
+  },
+  "source_configs": {
+    "mock": {
+      "preset": "cycle",
+      "cycle_presets": [
+        "overview",
+        "train",
+        "weather",
+        "calendar"
+      ],
+      "refresh_interval_sec": 20
+    },
+    "train": {
+      "station_crs": "KGX",
+      "destination_crs": "",
+      "api_key": "",
+      "data_source": "mock"
+    },
+    "weather": {
+      "location_mode": "auto",
+      "city": "Beijing",
+      "latitude": "",
+      "longitude": "",
+      "api_key": "",
+      "units": "metric"
+    },
+    "calendar": {
+      "ical_url": "",
+      "lookahead_days": 3
+    },
+    "custom": {
+      "header_left": "",
+      "header_right": "",
+      "title": "PiBoard",
+      "subtitle": "Custom Display",
+      "rows": [],
+      "footer": "",
+      "status_text": "OK",
+      "status_color": "green",
+      "ticker": ""
+    }
+  },
+  "device_settings": {
+    "brightness": 1.0,
+    "orientation": "portrait"
+  }
+}

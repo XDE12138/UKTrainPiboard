@@ -1,0 +1,89 @@
+{
+  "geocoded_location": {
+    "name": "北京市",
+    "lat": 39.9075,
+    "lon": 116.39723
+  },
+  "open_meteo_current": {
+    "time": "2026-04-29T17:00",
+    "interval": 900,
+    "temperature_2m": 22.8,
+    "relative_humidity_2m": 14,
+    "apparent_temperature": 18.2,
+    "weather_code": 0,
+    "wind_speed_10m": 11.7,
+    "wind_direction_10m": 221,
+    "visibility": 16220.0,
+    "is_day": 1
+  },
+  "rendered": {
+    "header_left": "BEIJING",
+    "title": "23°C",
+    "subtitle": "CLEAR SKY",
+    "footer": "Open-Meteo - UPDATED 17:06",
+    "rows": [
+      [
+        "NOW",
+        "CLEAR SKY"
+      ],
+      [
+        "TEMP",
+        "23°C"
+      ],
+      [
+        "FEELS",
+        "18°C"
+      ],
+      [
+        "WIND",
+        "SW 12KM/H"
+      ],
+      [
+        "",
+        ""
+      ],
+      [
+        "NEXT",
+        "WED 24°C/10°C"
+      ],
+      [
+        "HUMIDITY",
+        "14%"
+      ],
+      [
+        "VISIBILITY",
+        "16KM"
+      ],
+      [
+        "UV INDEX",
+        "HIGH"
+      ],
+      [
+        "",
+        ""
+      ],
+      [
+        "FORECAST",
+        "3 DAYS"
+      ],
+      [
+        "WED",
+        "24°C / 10°C"
+      ],
+      [
+        "THU",
+        "28°C / 13°C"
+      ],
+      [
+        "FRI",
+        "26°C / 15°C"
+      ]
+    ],
+    "ticker": "Beijing: Clear Sky. Feels like 18°C. Wind SW 12KM/H. Next: Wed 24°C/10°C."
+  },
+  "assertions": {
+    "temperature_matches": true,
+    "humidity_matches": true,
+    "visibility_matches": true
+  }
+}

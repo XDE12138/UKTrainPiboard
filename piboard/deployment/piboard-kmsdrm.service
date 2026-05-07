@@ -1,0 +1,19 @@
+[Unit]
+Description=PiBoard Display System (kmsdrm)
+After=network-online.target systemd-user-sessions.service
+Wants=network-online.target
+Conflicts=display-manager.service uk-transport-led.service
+
+[Service]
+Type=simple
+User=pi-rail
+WorkingDirectory=/home/pi-rail/CC-UK-TR/piboard
+ExecStart=/usr/bin/python3 /home/pi-rail/CC-UK-TR/piboard/main.py --portrait --display-rotate 90
+Restart=always
+RestartSec=5
+Environment=SDL_VIDEODRIVER=kmsdrm
+Environment=SDL_AUDIODRIVER=dummy
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

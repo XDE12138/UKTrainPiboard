@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PiBoard 控制台</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --panel-2: #21262d;
+  --panel-3: #2d333b;
+  --border: #30363d;
+  --border-2: #3d444d;
+  --text: #e6edf3;
+  --muted: #7d8590;
+  --faint: #656d76;
+  --accent: #2f81f7;
+  --accent-bg: rgba(47, 129, 247, .14);
+  --green: #3fb950;
+  --green-bg: rgba(63, 185, 80, .12);
+  --red: #f85149;
+  --red-bg: rgba(248, 81, 73, .12);
+  --yellow: #d29922;
+  --radius: 6px;
+  --sidebar-w: 184px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+               "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.app-header {
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 700; }
+.brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.status-pill {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); }
+.status-pill.ok { color: var(--green); border-color: rgba(63, 185, 80, .35); }
+.status-pill.ok .status-dot { background: var(--green); }
+
+.app-body { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  padding: 12px 8px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+}
+.nav-item {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.nav-item:hover { background: var(--panel-2); color: var(--text); }
+.nav-item.active { background: var(--accent-bg); color: var(--accent); }
+.nav-icon { width: 20px; text-align: center; flex-shrink: 0; }
+
+.content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 20px;
+  padding-bottom: 84px;
+}
+.page { display: none; }
+.page.active { display: block; }
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.page-title { font-size: 22px; font-weight: 750; letter-spacing: 0; }
+.page-desc { color: var(--muted); font-size: 13px; margin-top: 3px; }
+
+.section-title {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  margin: 18px 0 10px;
+}
+.grid { display: grid; gap: 12px; }
+.grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.page-card, .panel, .source-card, .status-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.card-head {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.card-title { font-weight: 700; }
+.card-subtitle { color: var(--muted); font-size: 12px; margin-top: 1px; }
+.card-body { padding: 14px; }
+
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.metric {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 12px;
+}
+.metric-label { color: var(--muted); font-size: 12px; }
+.metric-value { margin-top: 3px; font-weight: 700; word-break: break-word; }
+
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+.btn:disabled { opacity: .55; cursor: wait; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
+.btn-primary:hover:not(:disabled) { background: #388bfd; }
+.btn-outline { border-color: var(--border-2); }
+.btn-outline:hover:not(:disabled) { background: var(--panel-2); }
+.btn-ghost { color: var(--muted); }
+.btn-ghost:hover:not(:disabled) { background: var(--panel-2); color: var(--text); }
+.btn-sm { min-height: 30px; padding: 5px 10px; font-size: 12px; }
+
+.field { margin-bottom: 12px; }
+.field label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+.field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+input[type=text], input[type=password], input[type=number], select, textarea {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+textarea { min-height: 78px; resize: vertical; }
+.check-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+.check-item input { accent-color: var(--accent); }
+
+.source-card.open .source-body { display: block; }
+.source-body { display: none; border-top: 1px solid var(--border); padding: 14px; }
+.source-toggle { cursor: pointer; }
+.chevron { color: var(--muted); transition: transform .15s; }
+.source-card.open .chevron { transform: rotate(90deg); }
+
+.rows-editor {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.row-editor-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(90px, 160px) 34px;
+  gap: 7px;
+  align-items: center;
+  padding: 7px;
+  border-bottom: 1px solid var(--border);
+}
+.row-editor-item:last-child { border-bottom: 0; }
+.row-editor-item input { min-height: 30px; }
+.row-editor-item .del { min-width: 30px; padding: 0; }
+
+.layout-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.layout-card {
+  min-height: 74px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.layout-card.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+.layout-icon { height: 28px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.block { background: var(--border-2); border-radius: 3px; }
+.layout-card.active .block { background: var(--accent); }
+.slots-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.slot-box { flex: 1; min-width: 160px; }
+
+.status-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.status-card { padding: 12px; }
+.status-label { color: var(--muted); font-size: 12px; }
+.status-value { margin-top: 4px; font-weight: 750; word-break: break-word; }
+.status-good { color: var(--green); }
+.status-warn { color: var(--yellow); }
+.status-bad { color: var(--red); }
+
+#notif {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  max-width: 320px;
+  display: none;
+  z-index: 20;
+  padding: 10px 14px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .34);
+}
+#notif.success { border-color: rgba(63, 185, 80, .45); color: var(--green); }
+#notif.warn { border-color: rgba(210, 153, 34, .45); color: var(--yellow); }
+#notif.error { border-color: rgba(248, 81, 73, .45); color: var(--red); }
+
+.bottom-nav {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 12;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  padding: 6px;
+  gap: 4px;
+}
+.bottom-nav .nav-item {
+  flex: 1;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  min-height: 48px;
+  padding: 5px 3px;
+}
+.bottom-nav .nav-icon { width: auto; }
+
+@media (max-width: 840px) {
+  .grid.two, .grid.three, .summary-strip, .status-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .sidebar { display: none; }
+  .bottom-nav { display: flex; }
+  .content { padding: 14px; padding-bottom: 78px; }
+  .page-head { flex-direction: column; }
+  .field-row, .check-grid, .layout-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="brand"><span class="brand-dot"></span><span>PiBoard 控制台</span></div>
+  <div class="header-actions">
+    <div class="status-pill" id="ws-badge">
+      <span class="status-dot"></span>
+      <span id="ws-label">连接中</span>
+    </div>
+  </div>
+</header>
+
+<div class="app-body">
+  <nav class="sidebar" aria-label="主导航">
+    <button class="nav-item active" data-page="content"><span class="nav-icon">▣</span>页面内容</button>
+    <button class="nav-item" data-page="sources"><span class="nav-icon">◇</span>数据源</button>
+    <button class="nav-item" data-page="status"><span class="nav-icon">●</span>设备状态</button>
+    <button class="nav-item" data-page="settings"><span class="nav-icon">⚙</span>显示设置</button>
+  </nav>
+
+  <main class="content">
+    <section class="page active" id="page-content">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">页面内容</h1>
+          <p class="page-desc">选择当前显示页，调整低功耗轮播，并编辑各页面对应内容。</p>
+        </div>
+        <button class="btn btn-outline" data-action="refresh-all">↻ 刷新状态</button>
+      </div>
+      <div class="summary-strip" id="display-summary"></div>
+      <p class="section-title">低功耗轮播</p>
+      <div id="cycle-panel"></div>
+      <p class="section-title">展示页面</p>
+      <div class="grid two" id="page-cards"></div>
+    </section>
+
+    <section class="page" id="page-sources">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">数据源</h1>
+          <p class="page-desc">集中配置真实 API、mock 数据和自定义文本。</p>
+        </div>
+        <button class="btn btn-outline" data-action="reload-sources">↻ 重新加载</button>
+      </div>
+      <div class="grid" id="source-list"></div>
+    </section>
+
+    <section class="page" id="page-status">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">设备状态</h1>
+          <p class="page-desc">查看连接、低功耗、方向、亮度，以及树莓派温度和 throttling。</p>
+        </div>
+        <button class="btn btn-outline" data-action="refresh-device-status">↻ 刷新设备状态</button>
+      </div>
+      <div class="status-grid" id="status-grid"></div>
+    </section>
+
+    <section class="page" id="page-settings">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">显示设置</h1>
+          <p class="page-desc">调整亮度、主题、动画、方向和高级布局。</p>
+        </div>
+      </div>
+
+      <p class="section-title">运行 App</p>
+      <div class="panel">
+        <div class="card-body">
+          <div class="btn-row" id="app-switcher">
+            {% for spec in app_catalog %}
+            <button class="btn btn-outline app-switch-btn{% if loop.first %} active{% endif %}"
+                    data-action="switch-app"
+                    data-app="{{ spec.app_id }}">
+              <span>{{ spec.icon }}</span>
+              {% if spec.app_id == "uk_station" %}展示看板{% elif spec.app_id == "system_status" %}系统状态{% else %}{{ spec.label }}{% endif %}
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <p class="section-title">基础显示</p>
+      <div class="panel">
+        <div class="card-body">
+          <div class="field-row">
+            <div class="field">
+              <label for="brightness">亮度</label>
+              <input type="range" id="brightness" min="0.1" max="1" step="0.05" value="1">
+            </div>
+            <div class="field">
+              <label for="color_theme">颜色主题</label>
+              <select id="color_theme">
+                <option value="amber">琥珀色</option>
+                <option value="green">绿色</option>
+                <option value="white">白色</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="animations_enabled">动画</label>
+              <select id="animations_enabled">
+                <option value="false">关闭（低功耗）</option>
+                <option value="true">开启</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="orientation">屏幕方向</label>
+              <select id="orientation">
+                <option value="portrait">竖屏 600×1024</option>
+                <option value="landscape">横屏 1024×600</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="section-title">高级布局</p>
+      <div class="panel">
+        <div class="card-body">
+          <div class="layout-grid" id="layout-grid">
+            <button class="layout-card active" data-layout="single">
+              <span class="layout-icon"><span class="block" style="width:48px;height:28px;"></span></span>
+              <span>单页</span>
+            </button>
+            <button class="layout-card" data-layout="dual">
+              <span class="layout-icon">
+                <span class="block" style="width:22px;height:28px;"></span>
+                <span class="block" style="width:22px;height:28px;"></span>
+              </span>
+              <span>双栏</span>
+            </button>
+            <button class="layout-card" data-layout="carousel">
+              <span class="layout-icon" style="flex-direction:column;gap:3px;">
+                <span class="block" style="width:48px;height:8px;"></span>
+                <span class="block" style="width:48px;height:8px;opacity:.6;"></span>
+                <span class="block" style="width:48px;height:8px;opacity:.3;"></span>
+              </span>
+              <span>轮播</span>
+            </button>
+          </div>
+          <p class="section-title">显示槽位</p>
+          <div class="slots-row" id="slots-container"></div>
+          <div class="btn-row" style="margin-top:14px;">
+            <button class="btn btn-primary" data-action="apply-layout">✓ 应用布局</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav class="bottom-nav" aria-label="底部导航">
+  <button class="nav-item active" data-page="content"><span class="nav-icon">▣</span>页面</button>
+  <button class="nav-item" data-page="sources"><span class="nav-icon">◇</span>数据源</button>
+  <button class="nav-item" data-page="status"><span class="nav-icon">●</span>状态</button>
+  <button class="nav-item" data-page="settings"><span class="nav-icon">⚙</span>设置</button>
+</nav>
+
+<div id="notif"></div>
+
+<script>
+const DEFAULT_APP_ID = "{{ default_app_id }}";
+</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

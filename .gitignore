@@ -1,0 +1,27 @@
+# macOS / editor noise
+.DS_Store
+.claude/
+
+# Python caches and local test output
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local virtual environments
+.venv/
+venv/
+env/
+
+# Secrets and machine-local runtime state
+.env
+.env.*
+piboard/data/state.json
+piboard/data/*.tmp
+
+# Runtime logs / scratch captures
+*.log
+*.b64
+

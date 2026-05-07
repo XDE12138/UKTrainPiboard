@@ -1,0 +1,15 @@
+[Unit]
+Description=PiBoard Display System
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/pi/piboard/main.py
+WorkingDirectory=/home/pi/piboard
+Restart=always
+RestartSec=5
+User=pi
+Environment=SDL_VIDEODRIVER=kmsdrm
+Environment=SDL_AUDIODRIVER=dummy
+
+[Install]
+WantedBy=multi-user.target
