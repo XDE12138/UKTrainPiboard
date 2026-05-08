@@ -9,6 +9,7 @@
 ## 目录
 
 - [项目背景](#项目背景)
+- [v0.1-demo 当前状态](#v01-demo-当前状态)
 - [系统架构](#系统架构)
 - [目录结构](#目录结构)
 - [快速开始](#快速开始)
@@ -36,6 +37,17 @@
 **视觉定位**：完全还原英国火车站 LED 点阵报站屏风格——自定义 5×7 / 7×9 点阵字体，每个像素渲染为带高光的圆点，背景 #080808，琥珀色主光 #FF9500，暗点 #1C1000。车站大屏风格是系统内置的第一套「主题」，未来可扩展更多主题。
 
 **控制方式**：手机或电脑在局域网内访问 Web 控制台（Flask + WebSocket），无需连接键盘鼠标到 Pi。
+
+---
+
+## v0.1-demo 当前状态
+
+- Web 控制台端口固定为 `8080`，验收检查以 `/api/state` 和 `/api/device-status` 为主。
+- 当前 MVP 是低功耗展示版：`single/mock + cycle`，默认轮换 `overview/train/weather/calendar`，动画关闭。
+- 天气无 API Key 时走 Open-Meteo live path；OpenWeatherMap Key 仍作为可选兼容路径。
+- 亮度滑杆已通过 host-level dimming overlay 生效，持久化字段是 `device_settings.brightness`，范围 `0.1-1.0`。
+- Pi 验收记录见 `../docs/v0.1-demo.md`，截图证据见 `review_artifacts/pi-acceptance-v0.1-demo/`。
+- `data/state.json` 是本机私有运行态，不能提交；公开示例配置是 `data/state.example.json`。
 
 ---
 
@@ -94,7 +106,7 @@ piboard/
 │   ├── base.py                # BaseProvider 抽象基类
 │   ├── mock.py                # Mock Provider（内置3个预设，无需API）
 │   ├── train.py               # 列车时刻（支持 mock/huxley2/transportapi）
-│   ├── weather.py             # 天气（支持 mock/OpenWeatherMap）
+│   ├── weather.py             # 天气（默认 Open-Meteo，可选 OpenWeatherMap）
 │   ├── calendar_provider.py   # 日程（支持 mock/iCal URL）
 │   └── custom.py              # 自定义文本（Web 端直接编辑）
 │
@@ -126,11 +138,13 @@ piboard/
 ### 开发机（Mac / Linux 桌面）
 
 ```bash
+# 进入应用目录
+cd piboard
+
 # 安装依赖
-pip install pygame flask flask-sock requests icalendar
+pip install -r requirements.txt
 
 # 窗口模式（无需 Pi）
-cd piboard
 python3 main.py --window
 
 # 预览点阵字体效果
@@ -160,6 +174,7 @@ sudo systemctl start piboard
 | `--window` | 窗口模式（开发调试，不需要 Pi） |
 | `--mock` | 兼容保留参数；当前不改变 Provider 行为 |
 | `--portrait` | 竖屏模式（默认 600×1024）；**仅影响本次启动，不写入持久化状态**。长期改方向请用 Web 控制台 |
+| `--display-rotate <0/90/180/270>` | direct kmsdrm 场景下旋转物理输出；v0.1-demo Pi 使用 `90` |
 | `--provider <id>` | 指定启动后显示的 Provider（会持久化到 state.json） |
 | `--layout <id>` | 指定启动布局（single / dual / carousel）（会持久化到 state.json） |
 | `--width <px>` | 自定义屏幕宽度（仅影响本次启动） |
@@ -198,10 +213,14 @@ python3 main.py --window --width 800 --height 480
 Huxley2 是免费的 Darwin 数据代理，无需注册，推荐使用。
 
 ### 天气（`weather`）
+
+无 `api_key` 时默认使用 Open-Meteo：手动城市模式会先做 Open-Meteo geocoding，自动位置模式使用 Web 控制台保存的经纬度。有 OpenWeatherMap API Key 时保留旧 OpenWeatherMap 路径。
+
 | 配置项 | 说明 |
 |--------|------|
 | `city` | 城市名（如 `London`、`Beijing`） |
-| `api_key` | OpenWeatherMap API Key（留空使用 Mock） |
+| `location_mode` | `auto` / `manual` |
+| `api_key` | 可选 OpenWeatherMap API Key；留空使用 Open-Meteo |
 | `units` | `metric`（摄氏度）/ `imperial`（华氏度） |
 
 ### 日程（`calendar`）
@@ -277,7 +296,7 @@ WS   /ws                          # 双向实时通信
 - [x] `BaseProvider` 抽象基类（含 schema / fetch / cache 机制）
 - [x] Mock Provider（3 个完整预设：火车/天气/日程）
 - [x] Train Provider（mock + Huxley2 + Transport API 三种数据源）
-- [x] Weather Provider（mock + OpenWeatherMap）
+- [x] Weather Provider（默认 Open-Meteo + 可选 OpenWeatherMap）
 - [x] Calendar Provider（mock + iCal URL）
 - [x] Custom Provider（Web 端直接编辑内容）
 
@@ -286,6 +305,8 @@ WS   /ws                          # 双向实时通信
 - [x] 状态持久化（`data/state.json`，重启恢复）
 - [x] 后台数据调度器（`ThreadPoolExecutor(max_workers=2)`，失败保留缓存）
 - [x] 颜色主题系统（Amber / Green / White）
+- [x] 亮度 overlay（`device_settings.brightness`，0.1-1.0）
+- [x] Pi direct kmsdrm 竖屏验收（`--portrait --display-rotate 90`）
 
 ### Web 控制台
 - [x] Dashboard 风格控制台（Display / Content / Settings 三页导航）
@@ -309,19 +330,15 @@ WS   /ws                          # 双向实时通信
 
 ### 高优先级
 
-- [ ] **竖屏实机测试** — 在真实硬件上验证 600×1024 显示效果和触摸/旋转行为
-- [ ] **Huxley2 真实数据联调** — 用实际 CRS 代码测试列车时刻抓取（目前 Mock 已验证）
-- [ ] **weather.py 真实 API 测试** — 用 OpenWeatherMap Key 验证预报数据解析
-- [ ] **亮度控制实现** — 目前亮度设置写入 state 但未实际应用到 pygame（可通过 `pygame.Surface.set_alpha` 或 overlay 实现）
-- [ ] **颜色主题切换运行时生效** — 目前改主题需重建布局实例；需在 `renderer.py` 的 `_switch_layout` 检测主题变更并触发重建
+- [ ] **Pi 版本标记** — Pi 运行目录当前没有 `.git`，建议增加可回读 commit/tag 文件，方便验收证明版本来源。
+- [ ] **Huxley2 真实数据联调** — 用公开 CRS 代码测试列车时刻抓取（目前 Mock 已验证）。
+- [ ] **公开仓库清理** — 如准备发布到 GitHub，先清理历史文档中的本机路径和局域网地址。
 
 ### 中优先级
 
-- [ ] **横竖屏运行时切换** — 当前需重启 main.py；目标是 Web 端点击后自动重启（可用 `os.execv` 重启进程）
-- [ ] **Carousel 间隔可配置** — 目前硬编码 10 秒，应暴露到 Web 控制台
-- [ ] **calendar.py iCal 真实联调** — 用 Google Calendar 公开 iCal 链接测试
-- [ ] **Web 控制台实时预览** — 编辑 Custom Provider 内容时，Web 端同步预览渲染效果（可用 Canvas 模拟简化版点阵）
-- [ ] **Provider 刷新状态指示** — Web 端显示各 Provider 最后成功刷新时间
+- [ ] **横竖屏运行时切换** — 当前需重启 main.py；目标是 Web 端点击后自动重启（可用 `os.execv` 重启进程）。
+- [ ] **calendar.py iCal 公开测试源联调** — 使用不含个人日程的测试订阅验证 live path。
+- [ ] **Provider 刷新状态指示** — Web 端显示各 Provider 最后成功刷新时间。
 
 ### 低优先级
 
@@ -471,10 +488,10 @@ from providers.my_provider import MyProvider
 
 ```bash
 # 1. 在 Pi 上克隆代码
-git clone <repo> /home/pi/piboard
+git clone <repo> /home/pi-rail/CC-UK-TR
 
 # 2. 运行安装脚本（自动配置 GPU、安装依赖、注册服务）
-cd /home/pi/piboard
+cd /home/pi-rail/CC-UK-TR/piboard
 chmod +x install.sh
 ./install.sh
 
@@ -488,20 +505,19 @@ sudo journalctl -u piboard -f
 # http://<Pi的IP>:8080
 ```
 
-**屏幕方向由 Web 控制台持久化管理**，service 文件中不应写死 `--portrait`。
-
-正确流程：启动 PiBoard → 在 Web 控制台 Settings 页切换为 Portrait → 重启后按持久化值自动恢复。`device_settings.orientation` 是唯一的方向真相源。
+v0.1-demo 的 Pi service 针对当前竖装 7 寸屏固定使用 `--portrait --display-rotate 90`。若换屏或安装方向相反，只改 `--display-rotate` 为 `270`，再 reload/restart service。
 
 ```ini
-# 标准 service，不指定方向（由 Web 控制台管理）
-ExecStart=/usr/bin/python3 /home/pi/piboard/main.py
+ExecStart=/usr/bin/python3 /home/pi-rail/CC-UK-TR/piboard/main.py --portrait --display-rotate 90
+Environment=SDL_VIDEODRIVER=kmsdrm
+Environment=SDL_AUDIODRIVER=dummy
 ```
 
-若需临时调试竖屏（**用完请恢复为上面的标准 service**），可在 shell 中一次性运行：
+若需临时调试竖屏，可在 shell 中一次性运行：
 
 ```bash
 sudo systemctl stop piboard
-python3 /home/pi/piboard/main.py --portrait
+python3 /home/pi-rail/CC-UK-TR/piboard/main.py --portrait --display-rotate 90
 # 调试完毕后 sudo systemctl start piboard 恢复服务
 ```
 

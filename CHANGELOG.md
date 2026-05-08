@@ -20,3 +20,9 @@ Known gaps at this version:
 - Current local runtime state is intentionally excluded from Git.
 - Pi-side verification should be repeated after the latest local UI/content changes.
 
+Follow-up records:
+
+- `350c022` added the Pi acceptance record in `docs/v0.1-demo.md`.
+- `475ecea` added safe Pi acceptance screenshots under `piboard/review_artifacts/pi-acceptance-v0.1-demo/`.
+- `piboard/data/state.json` remains ignored; `piboard/data/state.example.json` is the public example config.
+- README/TODO now describe the current `v0.1-demo` MVP: port `8080`, brightness overlay, Open-Meteo default weather, Pi deployment, and acceptance evidence.
