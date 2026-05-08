@@ -25,3 +25,5 @@ piboard/data/*.tmp
 *.log
 *.b64
 
+# Local diagnostics that can include console, hostname, or LAN details
+piboard/review_artifacts/pi-acceptance-v0.1-demo/custom-framebuffer.png
