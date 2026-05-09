@@ -2,6 +2,10 @@
 
 PiBoard 是一个运行在 Raspberry Pi Zero 2W 上的个人信息显示系统，用 pygame/SDL2 直接渲染英国火车站 LED 点阵风格大屏。当前仓库目标是 `v0.1-demo`：不是继续扩功能，而是能稳定展示、能说明部署方式、能给出 Pi 验收证据。
 
+![PiBoard overview demo](piboard-deploy-final-overview.png)
+
+![PiBoard weather demo](piboard-deploy-weather.png)
+
 ## 当前 MVP
 
 - 英国火车站风格点阵显示：概览、列车、天气、日程、自定义页面。
@@ -49,6 +53,5 @@ Environment=SDL_AUDIODRIVER=dummy
 
 - 给 Pi 运行目录增加可回读版本标记，避免 Pi 侧没有 `.git` 时无法证明 commit/tag。
 - 用公开测试数据复核 Huxley2 或 Transport API 列车实况路径。
-- 如果准备公开 GitHub，先清理历史文档中的本机路径和局域网地址。
 
 更多实现细节见 [piboard/README.md](piboard/README.md)。
