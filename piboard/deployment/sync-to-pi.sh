@@ -1,9 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PI_HOST="${1:-pi-rail@192.168.31.242}"
+if [[ $# -gt 0 ]]; then
+  PI_HOST="$1"
+elif [[ -n "${PIBOARD_PI_HOST:-}" ]]; then
+  PI_HOST="${PIBOARD_PI_HOST}"
+else
+  echo "Usage: $0 <pi-user@pi-host-or-ip>" >&2
+  echo "Or set PIBOARD_PI_HOST=<pi-user@pi-host-or-ip>." >&2
+  exit 2
+fi
+
 LOCAL_ROOT="${PIBOARD_LOCAL_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-REMOTE_ROOT="${PIBOARD_REMOTE_ROOT:-/home/pi-rail/CC-UK-TR/piboard}"
+if [[ "${PI_HOST}" != *@* && -z "${PIBOARD_REMOTE_ROOT:-}" ]]; then
+  echo "PI_HOST must include a user, for example pi@<pi-host>." >&2
+  echo "Alternatively set PIBOARD_REMOTE_ROOT explicitly." >&2
+  exit 2
+fi
+
+REMOTE_USER="${PI_HOST%@*}"
+REMOTE_ROOT="${PIBOARD_REMOTE_ROOT:-/home/${REMOTE_USER}/CC-UK-TR/piboard}"
 SERVICE_NAME="${PIBOARD_SERVICE_NAME:-piboard.service}"
 
 echo "Stopping ${SERVICE_NAME} on ${PI_HOST}"

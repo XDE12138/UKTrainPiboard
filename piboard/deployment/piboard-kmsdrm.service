@@ -6,9 +6,9 @@ Conflicts=display-manager.service uk-transport-led.service
 
 [Service]
 Type=simple
-User=pi-rail
-WorkingDirectory=/home/pi-rail/CC-UK-TR/piboard
-ExecStart=/usr/bin/python3 /home/pi-rail/CC-UK-TR/piboard/main.py --portrait --display-rotate 90
+User=pi
+WorkingDirectory=/home/pi/CC-UK-TR/piboard
+ExecStart=/usr/bin/python3 /home/pi/CC-UK-TR/piboard/main.py --portrait --display-rotate 90
 Restart=always
 RestartSec=5
 Environment=SDL_VIDEODRIVER=kmsdrm
