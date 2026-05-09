@@ -26,7 +26,7 @@ python3 main.py --window
 当前 Pi demo service 使用 direct `kmsdrm`：
 
 ```ini
-ExecStart=/usr/bin/python3 /home/pi-rail/CC-UK-TR/piboard/main.py --portrait --display-rotate 90
+ExecStart=/usr/bin/python3 /home/<pi-user>/CC-UK-TR/piboard/main.py --portrait --display-rotate 90
 Environment=SDL_VIDEODRIVER=kmsdrm
 Environment=SDL_AUDIODRIVER=dummy
 ```

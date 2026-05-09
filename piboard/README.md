@@ -488,10 +488,10 @@ from providers.my_provider import MyProvider
 
 ```bash
 # 1. 在 Pi 上克隆代码
-git clone <repo> /home/pi-rail/CC-UK-TR
+git clone <repo> /home/<pi-user>/CC-UK-TR
 
 # 2. 运行安装脚本（自动配置 GPU、安装依赖、注册服务）
-cd /home/pi-rail/CC-UK-TR/piboard
+cd /home/<pi-user>/CC-UK-TR/piboard
 chmod +x install.sh
 ./install.sh
 
@@ -508,7 +508,7 @@ sudo journalctl -u piboard -f
 v0.1-demo 的 Pi service 针对当前竖装 7 寸屏固定使用 `--portrait --display-rotate 90`。若换屏或安装方向相反，只改 `--display-rotate` 为 `270`，再 reload/restart service。
 
 ```ini
-ExecStart=/usr/bin/python3 /home/pi-rail/CC-UK-TR/piboard/main.py --portrait --display-rotate 90
+ExecStart=/usr/bin/python3 /home/<pi-user>/CC-UK-TR/piboard/main.py --portrait --display-rotate 90
 Environment=SDL_VIDEODRIVER=kmsdrm
 Environment=SDL_AUDIODRIVER=dummy
 ```
@@ -517,7 +517,7 @@ Environment=SDL_AUDIODRIVER=dummy
 
 ```bash
 sudo systemctl stop piboard
-python3 /home/pi-rail/CC-UK-TR/piboard/main.py --portrait --display-rotate 90
+python3 /home/<pi-user>/CC-UK-TR/piboard/main.py --portrait --display-rotate 90
 # 调试完毕后 sudo systemctl start piboard 恢复服务
 ```
 

@@ -4,10 +4,10 @@
 
 ## Screenshot Files
 
-- Overview: `/Users/xde/Desktop/project/CC-UK-TR/piboard/review_artifacts/visual-qa-2026-04-29/overview-portrait-600x1024.png`
-- Rail: `/Users/xde/Desktop/project/CC-UK-TR/piboard/review_artifacts/visual-qa-2026-04-29/rail-portrait-600x1024.png`
-- Weather: `/Users/xde/Desktop/project/CC-UK-TR/piboard/review_artifacts/visual-qa-2026-04-29/weather-portrait-600x1024.png`
-- Schedule: `/Users/xde/Desktop/project/CC-UK-TR/piboard/review_artifacts/visual-qa-2026-04-29/schedule-portrait-600x1024.png`
+- Overview: `<repo>/piboard/review_artifacts/visual-qa-2026-04-29/overview-portrait-600x1024.png`
+- Rail: `<repo>/piboard/review_artifacts/visual-qa-2026-04-29/rail-portrait-600x1024.png`
+- Weather: `<repo>/piboard/review_artifacts/visual-qa-2026-04-29/weather-portrait-600x1024.png`
+- Schedule: `<repo>/piboard/review_artifacts/visual-qa-2026-04-29/schedule-portrait-600x1024.png`
 
 ## Overall Judgment
 
