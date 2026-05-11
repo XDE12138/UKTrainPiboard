@@ -39,9 +39,20 @@ ssh "${PI_HOST}" "\
   PYTHONPYCACHEPREFIX=/tmp/piboard-pycache python3 -m compileall -q '${REMOTE_ROOT}' && \
   python3 -m json.tool '${REMOTE_ROOT}/data/state.json' >/dev/null"
 
+SERVICE_TEMPLATE="${LOCAL_ROOT}/deployment/piboard-kmsdrm.service"
+SERVICE_TMP="$(mktemp)"
+trap 'rm -f "${SERVICE_TMP}"' EXIT
+sed \
+  -e "s|^User=.*|User=${REMOTE_USER}|" \
+  -e "s|^WorkingDirectory=.*|WorkingDirectory=${REMOTE_ROOT}|" \
+  -e "s|^ExecStart=/usr/bin/python3 .*main.py|ExecStart=/usr/bin/python3 ${REMOTE_ROOT}/main.py|" \
+  "${SERVICE_TEMPLATE}" > "${SERVICE_TMP}"
+
 echo "Installing service file and starting ${SERVICE_NAME}"
+rsync -az "${SERVICE_TMP}" "${PI_HOST}:/tmp/piboard.service"
 ssh "${PI_HOST}" "\
-  sudo cp '${REMOTE_ROOT}/deployment/piboard-kmsdrm.service' /etc/systemd/system/piboard.service && \
+  sudo cp /tmp/piboard.service /etc/systemd/system/piboard.service && \
+  rm -f /tmp/piboard.service && \
   sudo systemctl daemon-reload && \
   sudo systemctl start '${SERVICE_NAME}' && \
   systemctl status '${SERVICE_NAME}' --no-pager"
