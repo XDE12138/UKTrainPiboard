@@ -633,6 +633,10 @@ class MockProvider(BaseProvider):
         return dt.replace(minute=minute)
 
     def _train_preset(self) -> BoardContent:
+        live_content = self._linked_train_content()
+        if live_content is not None:
+            return live_content
+
         now = _dt.datetime.now()
         updated = now.strftime("%H:%M")
         return BoardContent(
@@ -672,6 +676,14 @@ class MockProvider(BaseProvider):
             title_size="LARGE",
             provider_id="mock",
         )
+
+    def _linked_train_content(self):
+        if self._linked_train_provider is None:
+            return None
+        content = self._linked_train_provider.get_content()
+        if content.subtitle == "Loading...":
+            return None
+        return copy.deepcopy(content)
 
     def _weather_preset(self) -> BoardContent:
         live_content = self._linked_weather_content()
