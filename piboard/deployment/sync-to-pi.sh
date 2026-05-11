@@ -43,6 +43,9 @@ rsync -az \
   --exclude '__pycache__' \
   --exclude '.DS_Store' \
   --exclude 'review_artifacts' \
+  --exclude 'BUILD_INFO' \
+  --exclude 'data/state.json' \
+  --exclude 'data/*.tmp' \
   --exclude '*.pyc' \
   "${LOCAL_ROOT}/" \
   "${PI_HOST}:${REMOTE_ROOT}/"
@@ -59,7 +62,9 @@ rsync -az "${BUILD_INFO_TMP}" "${PI_HOST}:${REMOTE_ROOT}/BUILD_INFO"
 echo "Validating synced files"
 ssh "${PI_HOST}" "\
   PYTHONPYCACHEPREFIX=/tmp/piboard-pycache python3 -m compileall -q '${REMOTE_ROOT}' && \
-  python3 -m json.tool '${REMOTE_ROOT}/data/state.json' >/dev/null"
+  if [ -f '${REMOTE_ROOT}/data/state.json' ]; then \
+    python3 -m json.tool '${REMOTE_ROOT}/data/state.json' >/dev/null; \
+  fi"
 
 SERVICE_TEMPLATE="${LOCAL_ROOT}/deployment/piboard-kmsdrm.service"
 SERVICE_TMP="$(mktemp)"
