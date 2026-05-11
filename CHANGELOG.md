@@ -13,6 +13,7 @@
 - Local Python compile check passes for `piboard`.
 - Minimal v0.1.1 smoke checks cover mock cycle order, state example JSON, Train mock bridge, Weather no-key Open-Meteo path selection, and API/state shape.
 - Open-Meteo live weather path was verified locally with no API key.
+- Current HEAD was deployed to Pi, `/api/version` returned `v0.1.1`, `piboard.service` was active/enabled, and Overview/Train/Weather/Calendar/Custom page switching passed in a safe acceptance state.
 
 ### Documentation
 
