@@ -9,7 +9,7 @@
 ## 目录
 
 - [项目背景](#项目背景)
-- [v0.1-demo 当前状态](#v01-demo-当前状态)
+- [v0.1.1 当前状态](#v011-当前状态)
 - [系统架构](#系统架构)
 - [目录结构](#目录结构)
 - [快速开始](#快速开始)
@@ -40,13 +40,16 @@
 
 ---
 
-## v0.1-demo 当前状态
+## v0.1.1 当前状态
 
 - Web 控制台端口固定为 `8080`，验收检查以 `/api/state` 和 `/api/device-status` 为主。
 - 当前 MVP 是低功耗展示版：`single/mock + cycle`，默认轮换 `overview/train/weather/calendar`，动画关闭。
-- 天气无 API Key 时走 Open-Meteo live path；OpenWeatherMap Key 仍作为可选兼容路径。
+- 运行版本可通过 `/api/version` 和 `/api/device-status.version` 回读；Pi 同步脚本会生成 `BUILD_INFO`。
+- 天气无 API Key 时走 Open-Meteo live path；本次 v0.1.1 已用 London 验证无 Key live 返回。
+- Train 的 mock/demo 板面会显示 `DEMO` 和 `Rail demo data (mock)`；Huxley2 路径已实现，但本次公网请求返回 HTTP 500，不写成 live 已验收。
+- Calendar 无 iCal URL 时是 mock/demo；本次没有安全公开 iCal 测试源，不写成 live 已验收。
 - 亮度滑杆已通过 host-level dimming overlay 生效，持久化字段是 `device_settings.brightness`，范围 `0.1-1.0`。
-- Pi 验收记录见 `../docs/v0.1-demo.md`，截图证据见 `review_artifacts/pi-acceptance-v0.1-demo/`。
+- v0.1.1 验收记录见 `../docs/v0.1.1.md`；v0.1-demo 历史记录见 `../docs/v0.1-demo.md`。
 - `data/state.json` 是本机私有运行态，不能提交；公开示例配置是 `data/state.example.json`。
 
 ---
@@ -200,7 +203,7 @@ python3 main.py --window --width 800 --height 480
 ## 内置 Provider 说明
 
 ### Mock（`mock`）
-内置火车/天气/日程三个预设，按时间轮换。**无需任何 API Key**，是默认的开发调试 Provider。
+内置概览、火车、天气、日程预设，按时间轮换。**无需任何 API Key**，是默认的开发调试 Provider。mock/demo 内容必须按 demo 或 mock 标注，不能作为 live 数据宣传。
 
 ### 列车时刻（`train`）
 | 配置项 | 说明 |
@@ -210,7 +213,7 @@ python3 main.py --window --width 800 --height 480
 | `data_source` | `mock` / `huxley2` / `transportapi` |
 | `api_key` | transportapi 模式需要 |
 
-Huxley2 是免费的 Darwin 数据代理，无需注册，推荐使用。
+Huxley2 是免费的 Darwin 数据代理，无需注册。v0.1.1 代码路径已实现，但本次发布验收时公开 Huxley2 请求返回 HTTP 500，所以 README 不把 Train live 写成已验收。
 
 ### 天气（`weather`）
 
@@ -228,6 +231,8 @@ Huxley2 是免费的 Darwin 数据代理，无需注册，推荐使用。
 |--------|------|
 | `ical_url` | iCal 订阅链接（Google/Apple Calendar 均支持） |
 | `lookahead_days` | 显示未来几天（默认 3） |
+
+未配置 `ical_url` 时显示 mock/demo 日程。v0.1.1 没有提交或使用任何私有 iCal URL，也不声明 Calendar live 已验收。
 
 ### 自定义文本（`custom`）
 所有字段直接在 Web 控制台编辑，无任何网络请求。支持自定义 header、title、subtitle、内容行、footer、状态文字、跑马灯。
@@ -294,10 +299,10 @@ WS   /ws                          # 双向实时通信
 
 ### Provider 系统
 - [x] `BaseProvider` 抽象基类（含 schema / fetch / cache 机制）
-- [x] Mock Provider（3 个完整预设：火车/天气/日程）
-- [x] Train Provider（mock + Huxley2 + Transport API 三种数据源）
-- [x] Weather Provider（默认 Open-Meteo + 可选 OpenWeatherMap）
-- [x] Calendar Provider（mock + iCal URL）
+- [x] Mock Provider（4 个完整预设：概览/火车/天气/日程）
+- [x] Train Provider（mock 已验收；Huxley2 路径已实现但 v0.1.1 live 未通过；Transport API 为兼容路径）
+- [x] Weather Provider（默认 Open-Meteo 已验收 + 可选 OpenWeatherMap）
+- [x] Calendar Provider（mock 已验收；iCal live 需要安全测试源，v0.1.1 未声明已验收）
 - [x] Custom Provider（Web 端直接编辑内容）
 
 ### 系统基础设施
@@ -323,6 +328,7 @@ WS   /ws                          # 双向实时通信
 - [x] `--portrait` 竖屏模式（600×1024）
 - [x] systemd 服务文件
 - [x] 一键安装脚本（`install.sh`）
+- [x] Pi runtime 版本 marker（部署时生成 `BUILD_INFO`，API 暴露 `/api/version`）
 
 ---
 
@@ -330,15 +336,13 @@ WS   /ws                          # 双向实时通信
 
 ### 高优先级
 
-- [ ] **Pi 版本标记** — Pi 运行目录当前没有 `.git`，建议增加可回读 commit/tag 文件，方便验收证明版本来源。
-- [ ] **Huxley2 真实数据联调** — 用公开 CRS 代码测试列车时刻抓取（目前 Mock 已验证）。
-- [ ] **公开仓库清理** — 如准备发布到 GitHub，先清理历史文档中的本机路径和局域网地址。
+- [ ] **Huxley2 服务复测** — 当前本地验收请求返回 HTTP 500；v0.2 前可更换公开测试 CRS 或增加更清晰的 UI 失败状态。
+- [ ] **Calendar iCal 公开测试源** — 使用不含个人日程的测试订阅验证 live path。
+- [ ] **Provider 刷新状态指示** — Web 端显示各 Provider 最后成功/失败时间。
 
 ### 中优先级
 
 - [ ] **横竖屏运行时切换** — 当前需重启 main.py；目标是 Web 端点击后自动重启（可用 `os.execv` 重启进程）。
-- [ ] **calendar.py iCal 公开测试源联调** — 使用不含个人日程的测试订阅验证 live path。
-- [ ] **Provider 刷新状态指示** — Web 端显示各 Provider 最后成功刷新时间。
 
 ### 低优先级
 

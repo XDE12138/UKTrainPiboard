@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.1.1 - 2026-05-12
+
+### Fixed
+
+- Added a Pi-readable runtime version marker through `BUILD_INFO` and `/api/version`.
+- Marked mock/demo train, weather fallback, and calendar fallback states so they are not presented as live data.
+- Clarified Web console copy for Overview, Train, Weather, Calendar, and Custom data truthfulness.
+
+### Verified
+
+- Local Python compile check passes for `piboard`.
+- Minimal v0.1.1 smoke checks cover mock cycle order, state example JSON, Train mock bridge, Weather no-key Open-Meteo path selection, and API/state shape.
+- Open-Meteo live weather path was verified locally with no API key.
+
+### Documentation
+
+- Updated README scope for `v0.1.1`.
+- Added `docs/v0.1.1.md` acceptance record structure.
+- Updated `piboard/README.md` to separate verified behavior from mock/demo and pending live checks.
+
+### Known Issues
+
+- Huxley2 live requests returned HTTP 500 during local release validation, so Train live is not claimed as verified in `v0.1.1`.
+- Calendar live is not claimed as verified without a safe public iCal test feed.
+
 ## v0.1-demo-public - 2026-05-09
 
 Public GitHub release closure for the v0.1 demo.
