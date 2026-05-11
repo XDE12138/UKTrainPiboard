@@ -18,6 +18,7 @@ env/
 # Secrets and machine-local runtime state
 .env
 .env.*
+piboard/BUILD_INFO
 piboard/data/state.json
 piboard/data/*.tmp
 

@@ -28,6 +28,7 @@ from state import app_state
 from providers.base import BaseProvider
 from data.fetcher import DataFetcher
 from apps.catalog import APP_CATALOG, KNOWN_APP_IDS, DEFAULT_APP_ID
+from version import runtime_version
 
 log = logging.getLogger(__name__)
 
@@ -91,6 +92,10 @@ def create_app(providers: Dict[str, BaseProvider],
     @app.route("/api/device-status")
     def api_device_status():
         return jsonify(_build_device_status())
+
+    @app.route("/api/version")
+    def api_version():
+        return jsonify(runtime_version())
 
     @app.route("/api/app/<app_id>/layout", methods=["POST"])
     def api_app_layout(app_id):
@@ -391,6 +396,7 @@ def _build_device_status() -> dict:
         "ok": True,
         "hostname": socket.gethostname(),
         "time": int(time.time()),
+        "version": runtime_version(),
         "is_pi": _is_raspberry_pi(),
         "temp_c": _read_temperature_c(),
         "throttled": _read_throttled(),

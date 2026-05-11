@@ -12,6 +12,7 @@ else
 fi
 
 LOCAL_ROOT="${PIBOARD_LOCAL_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+REPO_ROOT="$(cd "${LOCAL_ROOT}/.." && pwd)"
 if [[ "${PI_HOST}" != *@* && -z "${PIBOARD_REMOTE_ROOT:-}" ]]; then
   echo "PI_HOST must include a user, for example pi@<pi-host>." >&2
   echo "Alternatively set PIBOARD_REMOTE_ROOT explicitly." >&2
@@ -21,6 +22,18 @@ fi
 REMOTE_USER="${PI_HOST%@*}"
 REMOTE_ROOT="${PIBOARD_REMOTE_ROOT:-/home/${REMOTE_USER}/CC-UK-TR/piboard}"
 SERVICE_NAME="${PIBOARD_SERVICE_NAME:-piboard.service}"
+LOCAL_VERSION="$(cat "${REPO_ROOT}/VERSION" 2>/dev/null || echo unknown)"
+LOCAL_COMMIT="$(git -C "${REPO_ROOT}" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)"
+LOCAL_TAG="$(git -C "${REPO_ROOT}" describe --tags --exact-match HEAD 2>/dev/null || true)"
+BUILD_INFO_TMP="$(mktemp)"
+SERVICE_TMP=""
+cleanup() {
+  rm -f "${BUILD_INFO_TMP}"
+  if [[ -n "${SERVICE_TMP}" ]]; then
+    rm -f "${SERVICE_TMP}"
+  fi
+}
+trap cleanup EXIT
 
 echo "Stopping ${SERVICE_NAME} on ${PI_HOST}"
 ssh "${PI_HOST}" "sudo systemctl stop '${SERVICE_NAME}'"
@@ -34,6 +47,15 @@ rsync -az \
   "${LOCAL_ROOT}/" \
   "${PI_HOST}:${REMOTE_ROOT}/"
 
+cat > "${BUILD_INFO_TMP}" <<BUILD_INFO
+version=${LOCAL_VERSION}
+commit=${LOCAL_COMMIT}
+tag=${LOCAL_TAG}
+deployed_at_utc=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+source=sync-to-pi.sh
+BUILD_INFO
+rsync -az "${BUILD_INFO_TMP}" "${PI_HOST}:${REMOTE_ROOT}/BUILD_INFO"
+
 echo "Validating synced files"
 ssh "${PI_HOST}" "\
   PYTHONPYCACHEPREFIX=/tmp/piboard-pycache python3 -m compileall -q '${REMOTE_ROOT}' && \
@@ -41,7 +63,6 @@ ssh "${PI_HOST}" "\
 
 SERVICE_TEMPLATE="${LOCAL_ROOT}/deployment/piboard-kmsdrm.service"
 SERVICE_TMP="$(mktemp)"
-trap 'rm -f "${SERVICE_TMP}"' EXIT
 sed \
   -e "s|^User=.*|User=${REMOTE_USER}|" \
   -e "s|^WorkingDirectory=.*|WorkingDirectory=${REMOTE_ROOT}|" \
