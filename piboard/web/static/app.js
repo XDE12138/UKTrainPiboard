@@ -18,22 +18,22 @@ const dirtyForms = new Set();
 
 const PAGE_CARDS = [
   { id: 'overview', title: '概览', source: 'mock', preset: 'overview',
-    desc: '跨日程、天气、交通的综合摘要。' },
+    desc: '综合摘要页；每个来源会显示 LIVE / MOCK / WAIT 等状态。' },
   { id: 'train', title: '列车', source: 'train',
-    desc: '配置车站 CRS、目的地和实时数据来源。' },
+    desc: 'Huxley2 为 live；mock 会在板面标注 DEMO。' },
   { id: 'weather', title: '天气', source: 'weather',
-    desc: '配置城市、单位和天气 API。' },
+    desc: '无 API Key 时使用 Open-Meteo live；有 Key 时使用 OpenWeatherMap。' },
   { id: 'calendar', title: '日程', source: 'calendar',
-    desc: '配置 iCal 地址和未来事件范围。' },
+    desc: '有 iCal URL 才是 live；未配置时显示 mock 日程。' },
   { id: 'custom', title: '自定义', source: 'custom',
-    desc: '手工编辑标题、内容行、状态和底部文字。' },
+    desc: '完全手工编辑，不属于 live 数据源。' },
 ];
 
 const SOURCE_META = {
-  mock:     { title: '演示 / 轮播', desc: '内置展示数据，无需 API。' },
-  train:    { title: '列车数据', desc: '车站出发信息，可用 mock 或实时 API。' },
-  weather:  { title: '天气数据', desc: '城市天气和预报。' },
-  calendar: { title: '日程数据', desc: 'iCal / 日历事件。' },
+  mock:     { title: '演示 / 轮播', desc: '内置展示和聚合入口；mock 内容不代表 live。' },
+  train:    { title: '列车数据', desc: 'mock=DEMO；Huxley2/TransportAPI 才是 live。' },
+  weather:  { title: '天气数据', desc: '默认 Open-Meteo live；OpenWeatherMap 需要 API Key。' },
+  calendar: { title: '日程数据', desc: 'iCal URL 配置后才是 live；空 URL 为 mock。' },
   custom:   { title: '自定义文本', desc: '完全手动编辑的一页内容。' },
 };
 
@@ -437,7 +437,7 @@ function renderPageCard(card) {
 function renderPageForm(card, schema, cfg) {
   if (card.id === 'overview') {
     return `
-      <p class="page-desc" style="margin-bottom:12px;">概览页由内置 mock 摘要生成。需要单独显示概览时会自动把 Mock 预设切到“概览”。</p>
+      <p class="page-desc" style="margin-bottom:12px;">概览页使用 mock provider 作为入口，但会读取天气、日程、列车缓存；板面会分别标注 LIVE / MOCK / WAIT。</p>
       ${renderField('mock', 'refresh_interval_sec', schema.refresh_interval_sec || {type:'number', default:60}, cfg, 'page')}`;
   }
   if (card.source === 'weather') {

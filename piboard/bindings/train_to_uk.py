@@ -52,7 +52,7 @@ class TrainToUKBinding(BaseBinding):
 
         dep = raw.departures[0]
         platform = dep.platform.strip()
-        status_text, status_color = self._service_status(dep)
+        status_text, status_color = "DEMO", "orange"
         updated = time.strftime("%H:%M", time.localtime(raw.fetched_at))
 
         rows = []
@@ -81,10 +81,14 @@ class TrainToUKBinding(BaseBinding):
             subtitle="Calling at:",
             page_label=f"PLATFORM {platform}" if platform else raw.station_crs,
             rows=rows,
-            footer=dep.operator,
+            footer="Rail demo data (mock)",
             status_text=status_text,
             status_color=status_color,
-            ticker=self._ticker(raw, dep, platform, updated),
+            ticker=(
+                "Demo rail data only. Configure Train data_source=huxley2 "
+                "for live departures. "
+                + self._ticker(raw, dep, platform, updated)
+            ),
             carriage_hint=self._CARRIAGE_HINT,
             template="train",
             title_size="LARGE",
