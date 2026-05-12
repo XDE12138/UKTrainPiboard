@@ -11,7 +11,7 @@ PiBoard 是运行在 Raspberry Pi Zero 2W 上的个人信息显示系统，用 P
 ## 能展示什么
 
 - Overview：天气、日程、列车状态的综合摘要。
-- Train：英国铁路出发板样式；mock 模式明确标为 demo，Huxley2 live 路径已实现但本次发布不把它写成已验收 live。
+- Train：英国铁路出发板样式；mock 模式明确标为 demo；当前 `main` 默认使用 Huxley2 兼容 live endpoint，并保留原 Huxley2 Azure 地址作为 fallback。
 - Weather：无 OpenWeatherMap API Key 时走 Open-Meteo live；有 Key 时保留 OpenWeatherMap 路径。
 - Calendar：有 iCal URL 时走日历 live；未配置时显示 mock 日程。
 - Custom：手工编辑的自定义看板，不属于 live 数据源。
@@ -63,7 +63,7 @@ Environment=SDL_AUDIODRIVER=dummy
 | 页面 | v0.1.1 状态 |
 |---|---|
 | Overview | 混合摘要；每个来源在板面/文档中按 LIVE / MOCK / WAIT 标注 |
-| Train | 默认 mock/demo；Huxley2 路径已实现，本次本地公网请求返回 HTTP 500，不能宣称 live 已验收 |
+| Train | 默认 mock/demo；配置 `data_source=huxley2` 后走 Huxley2 兼容 live endpoint，BHM 已在 post-v0.1.1 hotfix 中验证 |
 | Weather | Open-Meteo live 已本地验证；OpenWeatherMap 需要用户自己的 API Key |
 | Calendar | 默认 mock/demo；iCal live 需要用户提供非公开订阅 URL，本次不宣称 live 已验收 |
 | Custom | 手工内容，不是 live 数据 |
@@ -81,7 +81,7 @@ Environment=SDL_AUDIODRIVER=dummy
 
 - v0.1.1 不新增页面和数据源，只收口现有演示与发布验收。
 - Calendar live 需要用户提供安全的公开测试 iCal；默认配置是 mock。
-- Huxley2 live 路径由公开服务可用性决定，本次本地公网请求未通过。
+- Train live 依赖公开 Huxley2 兼容服务可用性；当前默认 endpoint 已切到短期替代服务，并保留原 Azure endpoint 作为 fallback。
 - 运行时横竖屏切换仍需要重启进程。
 
 更多实现细节见 [piboard/README.md](piboard/README.md)。

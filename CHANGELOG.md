@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Switched the default Huxley2-compatible Train live endpoint to `https://national-rail-api.davwheat.dev` after the original Azure endpoint returned HTTP 500.
+- Added `huxley2_base_url` to Train configuration and kept the original Azure endpoint as a fallback.
+
+### Verified
+
+- BHM live departures returned via the replacement endpoint locally and on the Pi after deployment.
+
 ## v0.1.1 - 2026-05-12
 
 ### Fixed

@@ -46,7 +46,7 @@
 - 当前 MVP 是低功耗展示版：`single/mock + cycle`，默认轮换 `overview/train/weather/calendar`，动画关闭。
 - 运行版本可通过 `/api/version` 和 `/api/device-status.version` 回读；Pi 同步脚本会生成 `BUILD_INFO`。
 - 天气无 API Key 时走 Open-Meteo live path；本次 v0.1.1 已用 London 验证无 Key live 返回。
-- Train 的 mock/demo 板面会显示 `DEMO` 和 `Rail demo data (mock)`；Huxley2 路径已实现，但本次公网请求返回 HTTP 500，不写成 live 已验收。
+- Train 的 mock/demo 板面会显示 `DEMO` 和 `Rail demo data (mock)`；当前 `main` 使用 Huxley2 兼容 live endpoint，原 Azure endpoint 保留为 fallback。
 - Calendar 无 iCal URL 时是 mock/demo；本次没有安全公开 iCal 测试源，不写成 live 已验收。
 - 亮度滑杆已通过 host-level dimming overlay 生效，持久化字段是 `device_settings.brightness`，范围 `0.1-1.0`。
 - v0.1.1 验收记录见 `../docs/v0.1.1.md`；v0.1-demo 历史记录见 `../docs/v0.1-demo.md`。
@@ -211,9 +211,10 @@ python3 main.py --window --width 800 --height 480
 | `station_crs` | 出发站 CRS 代码（如 `KGX` = King's Cross） |
 | `destination_crs` | 目的地 CRS（可选，留空显示所有方向） |
 | `data_source` | `mock` / `huxley2` / `transportapi` |
+| `huxley2_base_url` | Huxley2 兼容 endpoint；默认 `https://national-rail-api.davwheat.dev` |
 | `api_key` | transportapi 模式需要 |
 
-Huxley2 是免费的 Darwin 数据代理，无需注册。v0.1.1 代码路径已实现，但本次发布验收时公开 Huxley2 请求返回 HTTP 500，所以 README 不把 Train live 写成已验收。
+Huxley2 是免费的 Darwin 数据代理，无需注册。v0.1.1 发布验收时原公开 endpoint 返回 HTTP 500；当前 `main` 已切到短期替代的 Huxley2 兼容 endpoint，并在 BHM 上验证 live 返回。
 
 ### 天气（`weather`）
 
@@ -300,7 +301,7 @@ WS   /ws                          # 双向实时通信
 ### Provider 系统
 - [x] `BaseProvider` 抽象基类（含 schema / fetch / cache 机制）
 - [x] Mock Provider（4 个完整预设：概览/火车/天气/日程）
-- [x] Train Provider（mock 已验收；Huxley2 路径已实现但 v0.1.1 live 未通过；Transport API 为兼容路径）
+- [x] Train Provider（mock 已验收；当前 main 的 Huxley2 兼容 live endpoint 已用 BHM 验证；Transport API 为兼容路径）
 - [x] Weather Provider（默认 Open-Meteo 已验收 + 可选 OpenWeatherMap）
 - [x] Calendar Provider（mock 已验收；iCal live 需要安全测试源，v0.1.1 未声明已验收）
 - [x] Custom Provider（Web 端直接编辑内容）
@@ -336,7 +337,7 @@ WS   /ws                          # 双向实时通信
 
 ### 高优先级
 
-- [ ] **Huxley2 服务复测** — 当前本地验收请求返回 HTTP 500；v0.2 前可更换公开测试 CRS 或增加更清晰的 UI 失败状态。
+- [ ] **Train live 稳定性复测** — 当前使用短期 Huxley2 兼容 endpoint；v0.2 前需要决定长期数据源策略或更清晰的 UI 失败状态。
 - [ ] **Calendar iCal 公开测试源** — 使用不含个人日程的测试订阅验证 live path。
 - [ ] **Provider 刷新状态指示** — Web 端显示各 Provider 最后成功/失败时间。
 
