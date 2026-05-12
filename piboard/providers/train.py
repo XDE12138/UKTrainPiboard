@@ -13,7 +13,7 @@ from board.content import BoardContent, BoardRow
 
 log = logging.getLogger(__name__)
 
-HUXLEY2_BASE = "https://huxley2.azurewebsites.net"
+HUXLEY2_BASE = "https://national-rail-api.davwheat.dev"
 
 
 class TrainProvider(BaseProvider):
@@ -33,6 +33,8 @@ class TrainProvider(BaseProvider):
             "data_source":     {"type": "select",  "label": "数据源",
                                  "options": ["mock", "huxley2", "transportapi"],
                                  "default": "mock"},
+            "huxley2_base_url": {"type": "string",  "label": "Huxley2 地址",
+                                 "default": HUXLEY2_BASE},
         }
 
     def fetch(self) -> BoardContent:
@@ -51,9 +53,10 @@ class TrainProvider(BaseProvider):
     def _fetch_huxley2(self) -> BoardContent:
         crs = self.config.get("station_crs", "KGX").upper()
         dest = self.config.get("destination_crs", "").upper()
-        url = f"{HUXLEY2_BASE}/departures/{crs}/5"
+        base_url = self.config.get("huxley2_base_url", HUXLEY2_BASE).rstrip("/")
+        url = f"{base_url}/departures/{crs}/5"
         if dest:
-            url = f"{HUXLEY2_BASE}/departures/{crs}/to/{dest}/5"
+            url = f"{base_url}/departures/{crs}/to/{dest}/5"
 
         resp = requests.get(url, timeout=10)
         resp.raise_for_status()

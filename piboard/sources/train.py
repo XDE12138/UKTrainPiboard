@@ -10,13 +10,15 @@ transportapi 暂由 TrainSourceBridge 回退到旧 TrainProvider。
 - 写入 self._cached_data，满足 BaseSource 约定
 """
 import logging
+import os
 import time
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from typing import List, Tuple
 from sources.base import BaseSource
 
-HUXLEY2_BASE = "https://huxley2.azurewebsites.net"
+HUXLEY2_BASE = "https://national-rail-api.davwheat.dev"
+HUXLEY2_FALLBACK_BASES = ("https://huxley2.azurewebsites.net",)
 log = logging.getLogger(__name__)
 
 
@@ -141,25 +143,25 @@ class TrainSource(BaseSource):
                                              exc=exc)
 
         dest = self.config.get("destination_crs", "").upper()
-        if dest:
-            url = f"{HUXLEY2_BASE}/departures/{crs}/to/{dest}/10"
+        last_reason = "NETWORK"
+        last_exc: Exception = RuntimeError(last_reason)
+        for base_url in self._huxley2_base_urls():
+            url = self._huxley2_url(base_url, crs, dest, rows=10)
+            try:
+                resp = requests.get(url, timeout=10)
+                resp.raise_for_status()
+                payload = resp.json()
+                break
+            except (requests.RequestException, ValueError) as exc:
+                last_reason = self._huxley2_error_reason(requests, exc)
+                last_exc = exc
+                log.warning(
+                    "Huxley2 unavailable [%s] via %s: %s",
+                    crs, base_url, last_reason,
+                )
         else:
-            url = f"{HUXLEY2_BASE}/departures/{crs}/10"
-
-        try:
-            resp = requests.get(url, timeout=10)
-            resp.raise_for_status()
-            payload = resp.json()
-        except (requests.RequestException, ValueError) as exc:
-            reason = "NETWORK"
-            if isinstance(exc, requests.HTTPError) and exc.response is not None:
-                reason = f"HTTP {exc.response.status_code}"
-            elif isinstance(exc, requests.Timeout):
-                reason = "TIMEOUT"
-            elif isinstance(exc, ValueError):
-                reason = "BAD DATA"
-            log.warning("Huxley2 unavailable [%s]: %s", crs, reason)
-            return self._huxley2_unavailable(crs=crs, reason=reason, exc=exc)
+            return self._huxley2_unavailable(
+                crs=crs, reason=last_reason, exc=last_exc)
 
         departures = []
         for svc in payload.get("trainServices") or []:
@@ -188,6 +190,40 @@ class TrainSource(BaseSource):
             mode="departures",
             error=reason,
         )
+
+    def _huxley2_base_urls(self) -> List[str]:
+        primary = (
+            str(self.config.get("huxley2_base_url", "")).strip()
+            or os.environ.get("PIBOARD_HUXLEY2_BASE_URL", "").strip()
+            or HUXLEY2_BASE
+        )
+        urls = [primary]
+        urls.extend(HUXLEY2_FALLBACK_BASES)
+        seen = set()
+        normalized = []
+        for url in urls:
+            url = str(url or "").strip().rstrip("/")
+            if url and url not in seen:
+                normalized.append(url)
+                seen.add(url)
+        return normalized
+
+    @staticmethod
+    def _huxley2_url(base_url: str, crs: str, dest: str, rows: int = 10) -> str:
+        base_url = base_url.rstrip("/")
+        if dest:
+            return f"{base_url}/departures/{crs}/to/{dest}/{rows}"
+        return f"{base_url}/departures/{crs}/{rows}"
+
+    @staticmethod
+    def _huxley2_error_reason(requests_module, exc: Exception) -> str:
+        if isinstance(exc, requests_module.HTTPError) and exc.response is not None:
+            return f"HTTP {exc.response.status_code}"
+        if isinstance(exc, requests_module.Timeout):
+            return "TIMEOUT"
+        if isinstance(exc, ValueError):
+            return "BAD DATA"
+        return "NETWORK"
 
     @staticmethod
     def _normalize_huxley_service(svc: dict) -> TrainDeparture:

@@ -60,7 +60,9 @@ def _default_state() -> Dict[str, Any]:
         "source_configs": {
             "mock":     {},
             "train":    {"station_crs": "KGX", "destination_crs": "",
-                         "api_key": "", "data_source": "mock"},
+                         "api_key": "", "data_source": "mock",
+                         "huxley2_base_url":
+                         "https://national-rail-api.davwheat.dev"},
             "weather":  dict(_DEFAULT_WEATHER_CONFIG),
             "calendar": {"ical_url": "", "lookahead_days": 3},
             "custom":   {

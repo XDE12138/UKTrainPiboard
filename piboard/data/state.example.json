@@ -33,7 +33,8 @@
       "station_crs": "KGX",
       "destination_crs": "",
       "api_key": "",
-      "data_source": "mock"
+      "data_source": "mock",
+      "huxley2_base_url": "https://national-rail-api.davwheat.dev"
     },
     "weather": {
       "location_mode": "auto",

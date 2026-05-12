@@ -21,6 +21,7 @@ from main import build_providers  # noqa: E402
 from providers.mock import MockProvider  # noqa: E402
 from providers.train_bridge import TrainSourceBridge  # noqa: E402
 from providers.weather_bridge import WeatherSourceBridge  # noqa: E402
+from sources.train import HUXLEY2_BASE, TrainSource  # noqa: E402
 from sources.weather import WeatherObservation  # noqa: E402
 from web.server import create_app  # noqa: E402
 
@@ -52,6 +53,12 @@ def check_train_mock_bridge() -> None:
     assert content.provider_id == "train"
     assert content.status_text == "DEMO"
     assert "mock" in content.footer.lower()
+
+
+def check_huxley2_default_endpoint() -> None:
+    source = TrainSource(config={"data_source": "huxley2", "station_crs": "BHM"})
+    assert HUXLEY2_BASE == "https://national-rail-api.davwheat.dev"
+    assert source._huxley2_base_urls()[0] == HUXLEY2_BASE
 
 
 class _WeatherSourceStub:
@@ -120,6 +127,7 @@ def main() -> int:
         ("state example JSON", check_state_example_json),
         ("mock cycle", check_mock_cycle_order),
         ("train mock bridge", check_train_mock_bridge),
+        ("Huxley2 default endpoint", check_huxley2_default_endpoint),
         ("weather no-key path", check_weather_no_key_uses_open_meteo_path),
         ("API/state shape", check_api_state_shape),
     ]
