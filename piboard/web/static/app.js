@@ -489,6 +489,10 @@ function renderSourceForm(sid, info) {
 
 function renderWeatherForm(sid, schema, cfg, scope) {
   const mode = cfg.location_mode || 'auto';
+  const canLocate = window.isSecureContext && !!navigator.geolocation;
+  const locationHint = !canLocate
+    ? '当前地址无法获取浏览器位置；可填写城市或经纬度。'
+    : (mode === 'auto' ? '自动模式会优先使用经纬度。' : '手动模式会使用城市名。');
   return `
     <div class="panel" style="background:var(--panel-2);border-color:var(--border);margin-bottom:12px;">
       <div class="card-body">
@@ -501,8 +505,8 @@ function renderWeatherForm(sid, schema, cfg, scope) {
           ${renderField(sid, 'longitude', schema.longitude || {type:'string', default:''}, cfg, scope)}
         </div>
         <div class="btn-row">
-          <button class="btn btn-outline btn-sm" data-action="use-current-location" data-scope="${scope}" data-source="${sid}">⌖ 使用当前位置</button>
-          <span class="page-desc">${mode === 'auto' ? '自动模式会优先使用经纬度；未授权时显示“当前位置”。' : '手动模式会使用城市名。'}</span>
+          <button class="btn btn-outline btn-sm" data-action="use-current-location" data-scope="${scope}" data-source="${sid}" ${canLocate ? '' : 'disabled title="定位需要 HTTPS 或本机地址"'}>⌖ 使用当前位置</button>
+          <span class="page-desc">${locationHint}</span>
         </div>
       </div>
     </div>
@@ -516,7 +520,7 @@ async function ensureAutoWeatherLocation() {
   if (autoWeatherLocationTried) return;
   if ((cfg.location_mode || 'auto') !== 'auto') return;
   if (cfg.latitude && cfg.longitude) return;
-  if (!navigator.geolocation) return;
+  if (!window.isSecureContext || !navigator.geolocation) return;
 
   autoWeatherLocationTried = true;
   try {
@@ -785,8 +789,8 @@ async function refreshSource(sid) {
 }
 
 async function useCurrentLocation(scope, sid) {
-  if (!navigator.geolocation) {
-    throw new Error('当前浏览器不支持定位。');
+  if (!window.isSecureContext || !navigator.geolocation) {
+    throw new Error('浏览器定位需要 HTTPS 或本机地址；请改用手动城市。');
   }
   const pos = await getBrowserPosition();
   setWeatherLocationFields(scope, sid, pos.coords.latitude, pos.coords.longitude);

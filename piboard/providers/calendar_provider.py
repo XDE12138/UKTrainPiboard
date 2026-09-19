@@ -22,7 +22,7 @@ class CalendarProvider(BaseProvider):
     def get_config_schema(self):
         return {
             "ical_url":      {"type": "string", "label": "iCal URL（Google/Apple日历）",
-                              "default": ""},
+                              "default": "", "secret": True},
             "lookahead_days": {"type": "number", "label": "显示未来几天",
                                "default": 3},
         }

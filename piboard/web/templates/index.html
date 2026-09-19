@@ -176,6 +176,7 @@ body {
   cursor: pointer;
 }
 .btn:disabled { opacity: .55; cursor: wait; }
+.btn[disabled][data-action="use-current-location"] { cursor: not-allowed; }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
 .btn-primary:hover:not(:disabled) { background: #388bfd; }
 .btn-outline { border-color: var(--border-2); }
