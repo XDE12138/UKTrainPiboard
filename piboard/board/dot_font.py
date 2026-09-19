@@ -37,6 +37,13 @@ _SIZE_CONFIG = {
     FontSize.XLARGE: (7, 9, 7),
 }
 
+_TRACKING_PX = {
+    FontSize.SMALL: 1,
+    FontSize.MEDIUM: 1,
+    FontSize.LARGE: 2,
+    FontSize.XLARGE: 3,
+}
+
 # ---------------------------------------------------------------------------
 # 5×7 ASCII 点阵 bitmap（行优先，每行一个 5-bit 整数，高位=左）
 # 覆盖 ASCII 32-126（space 到 ~）
@@ -61,7 +68,7 @@ _FONT_5X7: Dict[str, list] = {
     "0": [0x0E,0x11,0x13,0x15,0x19,0x11,0x0E],
     "1": [0x04,0x0C,0x04,0x04,0x04,0x04,0x0E],
     "2": [0x0E,0x11,0x01,0x02,0x04,0x08,0x1F],
-    "3": [0x1F,0x02,0x04,0x02,0x01,0x11,0x0E],
+    "3": [0x0E,0x11,0x01,0x06,0x01,0x11,0x0E],
     "4": [0x02,0x06,0x0A,0x12,0x1F,0x02,0x02],
     "5": [0x1F,0x10,0x1E,0x01,0x01,0x11,0x0E],
     "6": [0x06,0x08,0x10,0x1E,0x11,0x11,0x0E],
@@ -152,7 +159,7 @@ _FONT_7X9: Dict[str, list] = {
     "0": [0x1C,0x22,0x41,0x41,0x41,0x41,0x41,0x22,0x1C],
     "1": [0x08,0x18,0x28,0x08,0x08,0x08,0x08,0x08,0x3E],
     "2": [0x1C,0x22,0x41,0x01,0x02,0x04,0x08,0x10,0x7F],
-    "3": [0x7F,0x02,0x04,0x02,0x1C,0x02,0x01,0x41,0x3E],
+    "3": [0x3E,0x41,0x01,0x02,0x1C,0x02,0x01,0x41,0x3E],
     "4": [0x04,0x0C,0x14,0x24,0x44,0x7F,0x04,0x04,0x04],
     "5": [0x7F,0x40,0x40,0x7E,0x01,0x01,0x01,0x41,0x3E],
     "6": [0x1C,0x20,0x40,0x7E,0x41,0x41,0x41,0x22,0x1C],
@@ -250,24 +257,14 @@ _CJK_FONT_NAMES = (
 
 
 def _get_bitmap(char: str, size: str) -> Optional[list]:
-    """返回字符的点阵 bitmap，大字号优先 7×9，其余用 5×7。
-
-    已知限制（Typography Spec v1 记录）：
-      - LARGE/XLARGE 小写字母未在 _FONT_7X9 中定义，触发此处 fallback。
-        fallback 将 5×7 bitmap 按 7×9 网格拉伸，产生字形失真。
-        规则：LARGE/XLARGE 场景必须使用全大写文本，避免触发此路径。
-        后续修复：在 _FONT_7X9 中补充 a-z 定义，届时 fallback 仅用于罕见符号。
-
-      - descender 支持（future）：
-        若未来扩展小写字模至 5×9，此函数需增加 rows_override 参数，
-        并在 _render_char 中按实际 bitmap 行数渲染（而非固定 rows）。
-        设计草案：bitmap 长度 > grid_rows 时，超出行数渲染在 baseline 以下。
-    """
+    """Return a bitmap aligned to the selected 5x7 or 7x9 cell."""
     if size in (FontSize.LARGE, FontSize.XLARGE):
         if char in _FONT_7X9:
             return _FONT_7X9[char]
-        # 回退：5×7 bitmap，后续渲染时会按 7×9 网格拉伸（字形有失真，见上方注释）
-        return _FONT_5X7.get(char)
+        small = _FONT_5X7.get(char)
+        if small is not None:
+            return [0] + [row << 1 for row in small] + [0]
+        return None
     else:
         return _FONT_5X7.get(char)
 
@@ -531,16 +528,18 @@ def render_text(surface: pygame.Surface, text: str, x: int, y: int,
                 char_gap: int = 0) -> int:
     """
     在 surface 的 (x, y) 处渲染文字，返回渲染后的右边界 x 坐标。
-    char_gap: 字符间额外间距（点），默认 0（紧凑，更接近真实 LED 屏）
+    char_gap: 在字号默认 tracking 之外额外增加的点阵间距。
     """
     _, _, spacing = _SIZE_CONFIG[size]
-    gap_w = char_gap * spacing
+    gap_w = _TRACKING_PX[size] + char_gap * spacing
 
     cx = x
-    for ch in text:
+    for index, ch in enumerate(text):
+        if index:
+            cx += gap_w
         char_surf = _render_char(ch, size, color)
         surface.blit(char_surf, (cx, y))
-        cx += char_surf.get_width() + gap_w
+        cx += char_surf.get_width()
 
     return cx
 
@@ -552,14 +551,36 @@ def measure_text(text: str, size: str, char_gap: int = 0) -> Tuple[int, int]:
         return 0, rows * spacing
 
     _, _, spacing = _SIZE_CONFIG[size]
-    gap_w = char_gap * spacing
+    gap_w = _TRACKING_PX[size] + char_gap * spacing
     widths = []
     heights = []
     for ch in text:
         w, h = _measure_char(ch, size)
-        widths.append(w + gap_w)
+        widths.append(w)
         heights.append(h)
-    return sum(widths), max(heights)
+    return sum(widths) + gap_w * (len(widths) - 1), max(heights)
+
+
+def fit_text(text: str, size: str, max_width: int) -> str:
+    """Fit a single line by rendered width, marking truncation with a dot."""
+    text = str(text or "")
+    if max_width <= 0:
+        return ""
+    if measure_text(text, size)[0] <= max_width:
+        return text
+    suffix = "."
+    suffix_w = measure_text(suffix, size)[0]
+    if suffix_w > max_width:
+        return ""
+    low, high = 0, len(text)
+    while low < high:
+        middle = (low + high + 1) // 2
+        candidate = text[:middle].rstrip() + suffix
+        if measure_text(candidate, size)[0] <= max_width:
+            low = middle
+        else:
+            high = middle - 1
+    return text[:low].rstrip() + suffix
 
 
 def render_text_right_aligned(surface: pygame.Surface, text: str,

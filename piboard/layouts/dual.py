@@ -81,7 +81,8 @@ class DualLayout(BaseLayout):
                 self._ticker_page_starts[i] = pygame.time.get_ticks()
                 rows_h = self._renderer.get_rows_area_height(
                     panel_h, bool(content.ticker), content, panel_w)
-                anim.set_content(content, area_h=rows_h)
+                row_h = self._renderer.get_row_height(panel_h, content, panel_w)
+                anim.set_content(content, area_h=rows_h, row_h=row_h)
 
             params = anim.update()
             self._renderer.render(

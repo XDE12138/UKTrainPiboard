@@ -2,17 +2,17 @@
 板面渲染器：把 BoardContent 画到 pygame.Surface。
 
 布局（从上到下，portrait-first）：
-  顶部栏     6%   header_left / header_right       MEDIUM
+  顶部栏     8%   header_left / header_right       MEDIUM
   标题区    14%   title / subtitle / page_label     LARGE / SMALL
   内容行   余量   rows（左右两列，自动行高）          SMALL
-  底部区    20%   carriage / operator / ticker / status
+  底部区 train 25%，info 按内容计算
 """
 import pygame
 import datetime as _dt
 from typing import Optional, Tuple
 from board.content import BoardContent
 from board.dot_font import (
-    render_text, render_text_right_aligned, measure_text,
+    render_text, render_text_right_aligned, measure_text, fit_text,
     FontSize
 )
 
@@ -27,7 +27,7 @@ def _resolve_color(color_name: str, theme_colors: dict) -> Tuple[int, int, int]:
 # ---------------------------------------------------------------------------
 # 高亮行背景颜色
 # ---------------------------------------------------------------------------
-HIGHLIGHT_BG = (40, 28, 0, 110)  # 琥珀色透明背景（RGBA），强化首行层级感
+HIGHLIGHT_BG = (40, 28, 0, 75)
 
 # ---------------------------------------------------------------------------
 # 渲染器主类
@@ -53,7 +53,7 @@ class BoardRenderer:
         if key not in self._substrate_cache:
             surf = pygame.Surface((w, h))
             surf.fill((8, 8, 8))
-            dot_color = (28, 16, 0)  # DOT_OFF
+            dot_color = (20, 13, 3)
             for cy in range(1, h, 3):
                 for cx in range(1, w, 3):
                     surf.set_at((cx, cy), dot_color)
@@ -119,6 +119,15 @@ class BoardRenderer:
         _ = has_ticker, surface_w, ticker_page
         return surface_h - header_h - title_h - footer_h
 
+    def get_row_height(self, surface_h: int, content: BoardContent,
+                       surface_w: int = 0) -> int:
+        area_h = self.get_rows_area_height(surface_h, content=content,
+                                           surface_w=surface_w)
+        _, char_h = measure_text("A", FontSize.SMALL)
+        cap = 50 if surface_h >= 800 else 38
+        return min(cap, max(char_h + 8,
+                            area_h // max(len(content.rows), 1)))
+
     # ------------------------------------------------------------------
     # 模板解析与 Info footer 高度计算
     # ------------------------------------------------------------------
@@ -158,6 +167,14 @@ class BoardRenderer:
         header_right = self._resolve_header_text(
             content.header_right, content.header_right_clock_format)
 
+        usable_w = max(0, w - 2 * pad)
+        if header_right:
+            right_limit = usable_w if not header_left else usable_w // 2
+            header_right = fit_text(header_right, FontSize.MEDIUM, right_limit)
+        right_w, _ = measure_text(header_right, FontSize.MEDIUM)
+        left_limit = usable_w - right_w - (12 if header_right else 0)
+        header_left = fit_text(header_left, FontSize.MEDIUM, left_limit)
+
         if header_left:
             render_text(surface, header_left, x + pad, mid_y,
                         FontSize.MEDIUM, _resolve_color("amber", c))
@@ -188,7 +205,7 @@ class BoardRenderer:
         if size_str == "LARGE":
             return FontSize.LARGE
 
-        # AUTO: 优先 XLARGE
+        # AUTO: 优先 XLARGE；超长标题仍由 _draw_title 在 LARGE 下按像素截短。
         xl_w, _ = measure_text(text, FontSize.XLARGE)
         if xl_w <= usable_w:
             return FontSize.XLARGE
@@ -231,17 +248,24 @@ class BoardRenderer:
         if title_raw:
             # LARGE / XLARGE 必须 uppercase
             title_text = title_raw.upper() if title_font in (FontSize.LARGE, FontSize.XLARGE) else title_raw
+            title_text = fit_text(title_text, title_font, w - 2 * pad)
             render_text(surface, title_text, x + pad, base_y,
                         title_font,
                         _resolve_color(content.title_color, c))
-        if content.subtitle:
+        if content.subtitle or content.page_label:
             sub_y = base_y + title_char_h + gap
-            render_text(surface, content.subtitle, x + pad, sub_y,
-                        FontSize.SMALL,
-                        _resolve_color(content.subtitle_color, c))
-            # page_label 右对齐，与 subtitle 同行
-            if content.page_label:
-                render_text_right_aligned(surface, content.page_label,
+            usable_w = max(0, w - 2 * pad)
+            page_label = fit_text(content.page_label, FontSize.SMALL,
+                                  usable_w // 2 if content.subtitle else usable_w)
+            page_w, _ = measure_text(page_label, FontSize.SMALL)
+            subtitle_w = usable_w - page_w - (12 if page_label else 0)
+            subtitle = fit_text(content.subtitle, FontSize.SMALL, subtitle_w)
+            if subtitle:
+                render_text(surface, subtitle, x + pad, sub_y,
+                            FontSize.SMALL,
+                            _resolve_color(content.subtitle_color, c))
+            if page_label:
+                render_text_right_aligned(surface, page_label,
                                           x + w - pad, sub_y,
                                           FontSize.SMALL,
                                           _resolve_color(content.subtitle_color, c))
@@ -253,15 +277,16 @@ class BoardRenderer:
         pad = 8
 
         _, char_h = measure_text("A", FontSize.SMALL)
-        row_h = max(char_h + 6, h // max(len(content.rows), 1))
-        row_h = min(row_h, 38)   # 上限：参考图行高约 35-38px
+        row_h = self.get_row_height(surface.get_height(), content, w)
+        sparse_offset = ((h - len(content.rows) * row_h) // 3
+                         if len(content.rows) <= 3 and h >= 400 else 0)
 
         clip_rect = pygame.Rect(x, y, w, h)
         old_clip = surface.get_clip()
         surface.set_clip(clip_rect)
 
         for i, row in enumerate(content.rows):
-            ry = y + i * row_h - scroll_offset
+            ry = y + sparse_offset + i * row_h - scroll_offset
             if ry + row_h < y or ry > y + h:
                 continue
             if row.highlight:
@@ -272,12 +297,19 @@ class BoardRenderer:
             text_y = ry + (row_h - char_h) // 2
             indent = row.indent
 
-            if row.left:
-                render_text(surface, row.left, x + pad + indent, text_y,
+            usable_w = max(0, w - 2 * pad - indent)
+            right = fit_text(row.right, FontSize.SMALL,
+                             usable_w // 2 if row.left else usable_w)
+            right_w, _ = measure_text(right, FontSize.SMALL)
+            left = fit_text(row.left, FontSize.SMALL,
+                            usable_w - right_w - (12 if right else 0))
+
+            if left:
+                render_text(surface, left, x + pad + indent, text_y,
                             FontSize.SMALL,
                             _resolve_color(row.left_color, c))
-            if row.right:
-                render_text_right_aligned(surface, row.right,
+            if right:
+                render_text_right_aligned(surface, right,
                                           x + w - pad, text_y,
                                           FontSize.SMALL,
                                           _resolve_color(row.right_color, c))
@@ -338,7 +370,8 @@ class BoardRenderer:
         char_h = SMALL_H
         op_mid_y = y_operator + (operator_sub - char_h) // 2
         if content.footer:
-            render_text(surface, content.footer, x + pad, op_mid_y,
+            render_text(surface, fit_text(content.footer, FontSize.SMALL, w - 2 * pad),
+                        x + pad, op_mid_y,
                         FontSize.SMALL,
                         _resolve_color(content.footer_color, c))
 
@@ -351,7 +384,8 @@ class BoardRenderer:
         # ---- status 绿色状态（最底层）----
         st_mid_y = y_status + (status_sub - char_h) // 2
         if content.status_text:
-            render_text(surface, content.status_text, x + pad, st_mid_y,
+            render_text(surface, fit_text(content.status_text, FontSize.SMALL, w - 2 * pad),
+                        x + pad, st_mid_y,
                         FontSize.SMALL,
                         _resolve_color(content.status_color, c))
 
@@ -381,7 +415,8 @@ class BoardRenderer:
         if content.footer:
             pygame.draw.rect(surface, (12, 8, 0), (x, cur_y, w, row_h))
             mid_y = cur_y + (row_h - SMALL_H) // 2
-            render_text(surface, content.footer, x + pad, mid_y,
+            render_text(surface, fit_text(content.footer, FontSize.SMALL, w - 2 * pad),
+                        x + pad, mid_y,
                         FontSize.SMALL,
                         _resolve_color(content.footer_color, c))
             cur_y += row_h
@@ -390,7 +425,8 @@ class BoardRenderer:
         if content.status_text:
             pygame.draw.rect(surface, (6, 12, 6), (x, cur_y, w, row_h))
             mid_y = cur_y + (row_h - SMALL_H) // 2
-            render_text(surface, content.status_text, x + pad, mid_y,
+            render_text(surface, fit_text(content.status_text, FontSize.SMALL, w - 2 * pad),
+                        x + pad, mid_y,
                         FontSize.SMALL,
                         _resolve_color(content.status_color, c))
 
@@ -485,5 +521,5 @@ class BoardRenderer:
         return pages or [""]
 
     def _draw_separator(self, surface, y, w):
-        sep_color = (65, 45, 8)
+        sep_color = (48, 34, 12)
         pygame.draw.line(surface, sep_color, (0, y), (w, y), 1)

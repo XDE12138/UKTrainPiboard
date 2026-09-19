@@ -286,10 +286,7 @@ class TrainToUKBinding(BaseBinding):
             "Liverpool Lime Street": "Liverpool Lime",
             "Worcester Foregate Street": "Worcester F St",
         }
-        text = replacements.get(text, text)
-        if len(text) <= 16:
-            return text
-        return text[:16].rstrip()
+        return replacements.get(text, text)
 
     def _service_meta_rows(self, raw, dep, platform, status_text, status_color, updated):
         rows = [BoardRow("")]

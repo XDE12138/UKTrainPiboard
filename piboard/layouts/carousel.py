@@ -80,7 +80,8 @@ class CarouselLayout(BaseLayout):
             self._ticker_page_start = now
             rows_h = self._renderer.get_rows_area_height(
                 h, bool(content.ticker), content, w)
-            self._anim.set_content(content, area_h=rows_h)
+            row_h = self._renderer.get_row_height(h, content, w)
+            self._anim.set_content(content, area_h=rows_h, row_h=row_h)
 
         params = self._anim.update()
         self._renderer.render(

@@ -42,7 +42,8 @@ class CalendarToUKBinding(BaseBinding):
         next_event = self._next_future_event(sorted_events, raw.fetched_at)
 
         rows = self._build_rows(sorted_events, today, next_event, raw.fetched_at)
-        status_text = self._status_text(next_event)
+        status_text = (self._status_text(next_event) if sorted_events else
+                       f"UPDATED {datetime.datetime.fromtimestamp(raw.fetched_at):%H:%M}")
 
         return BoardContent(
             header_left="CALENDAR",
@@ -55,7 +56,7 @@ class CalendarToUKBinding(BaseBinding):
             footer=raw.source_label,
             status_text=status_text,
             status_color="green" if next_event else "dim",
-            ticker=self._ticker(sorted_events, today),
+            ticker=self._ticker(sorted_events, today) if sorted_events else None,
             template="info",
             provider_id="calendar",
             expires_at=None,
@@ -109,6 +110,12 @@ class CalendarToUKBinding(BaseBinding):
         tomorrow_events = [e for e in events if e.event_date == tomorrow]
         week_events = [e for e in events if e.event_date > tomorrow]
 
+        if not events:
+            return [
+                BoardRow("UPCOMING", "NONE IN VIEW",
+                         left_color="dim", right_color="amber"),
+            ]
+
         rows = []
         rows.extend(self._section_rows(
             "TODAY", today_events, today, next_event, "amber", fetched_at,
@@ -134,7 +141,6 @@ class CalendarToUKBinding(BaseBinding):
         ]
 
         if not events:
-            rows.append(BoardRow("NO EVENTS", "", left_color="dim", right_color="dim"))
             return rows
 
         for event in events:

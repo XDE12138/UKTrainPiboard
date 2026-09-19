@@ -62,7 +62,8 @@ class SingleLayout(BaseLayout):
             # 重置动画参数
             rows_h = self._renderer.get_rows_area_height(
                 h, bool(content.ticker), content, w)
-            self._anim.set_content(content, area_h=rows_h)
+            row_h = self._renderer.get_row_height(h, content, w)
+            self._anim.set_content(content, area_h=rows_h, row_h=row_h)
 
         # 更新动画
         anim_params = self._anim.update()

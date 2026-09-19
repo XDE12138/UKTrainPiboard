@@ -113,7 +113,7 @@ class OverviewToUKBinding(BaseBinding):
             highlighted = highlighted or should_highlight
             rows.append(BoardRow(
                 left=left,
-                right=self._clean(action.status, 10),
+                right=self._clean(action.status, 16),
                 left_color="amber",
                 right_color=action.status_color,
                 highlight=should_highlight,

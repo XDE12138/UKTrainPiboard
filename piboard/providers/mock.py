@@ -368,8 +368,12 @@ class MockProvider(BaseProvider):
 
     def _overview_calendar_from_content(self, content: BoardContent,
                                         now: _dt.datetime) -> dict:
-        state, state_color = self._content_freshness(
-            content, self._linked_calendar_provider, now)
+        config = getattr(self._linked_calendar_provider, "config", {}) or {}
+        if not str(config.get("ical_url", "")).strip():
+            state, state_color = "MOCK", "orange"
+        else:
+            state, state_color = self._content_freshness(
+                content, self._linked_calendar_provider, now)
         highlighted = self._highlighted_event_row(content)
         today_summary = self._calendar_today_summary(content)
         next_time = self._calendar_next_time(content, highlighted)
@@ -489,7 +493,7 @@ class MockProvider(BaseProvider):
 
     @staticmethod
     def _highlighted_event_row(content: BoardContent):
-        section_labels = {"TODAY", "TOMORROW", "THIS WEEK", "NO EVENTS"}
+        section_labels = {"TODAY", "TOMORROW", "THIS WEEK", "NO EVENTS", "UPCOMING"}
         first_event = None
         for row in getattr(content, "rows", []) or []:
             left = str(getattr(row, "left", "") or "").strip()

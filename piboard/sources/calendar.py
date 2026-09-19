@@ -141,7 +141,7 @@ class CalendarSource(BaseSource):
             today=today,
             events=events,
             fetched_at=time.time(),
-            source_label="Calendar",
+            source_label="iCal live",
         )
 
     @staticmethod

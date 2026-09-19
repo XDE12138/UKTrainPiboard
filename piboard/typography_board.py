@@ -22,7 +22,7 @@ Typography Test Board — PiBoard CC-UK-TR
     [5]  出发行模拟（SMALL）
     [6]  完整字符集（SMALL）
     [7]  易混字符对比（MEDIUM）
-    [8]  LARGE/XLARGE lowercase 拉伸失真演示
+    [8]  LARGE/XLARGE lowercase 居中回退对照
     [9]  Descender 专项测试（含 baseline 参考线）
     [10] Colon 垂直对齐测试（XLARGE + MEDIUM）
     [11] Ticker 静态预览（SMALL）
@@ -284,12 +284,12 @@ def build_board() -> tuple:
     y += sm_h + 2 + md_h + 10
     y = draw_sep(canvas, y)
 
-    # ── [8] LARGE/XLARGE lowercase 失真演示 ──────────────────────────────────
+    # ── [8] LARGE/XLARGE lowercase 回退对照 ──────────────────────────────────
     y = draw_section_label(canvas,
-        "[ 8 ]  LARGE/XLARGE LOWERCASE — stretch-fallback distortion", y)
+        "[ 8 ]  LARGE/XLARGE LOWERCASE — centered 5x7 fallback", y)
 
     y = draw_section_label(canvas,
-        "  lowercase at LARGE  (5x7 stretched to 7x9 — distorted, shown in red):", y)
+        "  lowercase at LARGE  (5x7 centered in 7x9 cell, shown in red):", y)
     render_text(canvas, "partly cloudy", PAD_X, y, FontSize.LARGE, RED)
     y += lg_h + 6
 
@@ -299,12 +299,12 @@ def build_board() -> tuple:
     y += lg_h + 6
 
     y = draw_section_label(canvas,
-        "  lowercase at XLARGE (distorted):", y)
+        "  lowercase at XLARGE (lower-detail fallback):", y)
     render_text(canvas, "humidity", PAD_X, y, FontSize.XLARGE, RED)
     y += xl_h + 6
 
     y = draw_section_label(canvas,
-        "  RULE: LARGE + XLARGE must use UPPERCASE ONLY until _FONT_7X9 a-z is defined.", y)
+        "  RULE: prefer uppercase at LARGE + XLARGE for native 7x9 detail.", y)
 
     y = draw_sep(canvas, y)
 
