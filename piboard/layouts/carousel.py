@@ -36,6 +36,8 @@ class CarouselLayout(BaseLayout):
         self._last_switch = 0
         self._last_provider_id = ""
         self._last_ticker = ""
+        self._last_rows_count = -1
+        self._last_geometry = None
         self._last_surface_w = 0
         self._ticker_page_start = 0
         self._work_surf = None
@@ -74,13 +76,18 @@ class CarouselLayout(BaseLayout):
         content = provider.get_content()
 
         ticker_text = content.ticker or ""
-        if content.provider_id != self._last_provider_id or ticker_text != self._last_ticker:
+        rows_h = self._renderer.get_rows_area_height(h, bool(content.ticker), content, w)
+        row_h = self._renderer.get_row_height(h, content, w)
+        geometry = (w, h, rows_h, row_h)
+        if (content.provider_id != self._last_provider_id
+                or ticker_text != self._last_ticker
+                or len(content.rows) != self._last_rows_count
+                or geometry != self._last_geometry):
             self._last_provider_id = content.provider_id
             self._last_ticker = ticker_text
+            self._last_rows_count = len(content.rows)
+            self._last_geometry = geometry
             self._ticker_page_start = now
-            rows_h = self._renderer.get_rows_area_height(
-                h, bool(content.ticker), content, w)
-            row_h = self._renderer.get_row_height(h, content, w)
             self._anim.set_content(content, area_h=rows_h, row_h=row_h)
 
         params = self._anim.update()
@@ -102,6 +109,8 @@ class CarouselLayout(BaseLayout):
         self._last_switch = 0
         self._last_provider_id = ""
         self._last_ticker = ""
+        self._last_rows_count = -1
+        self._last_geometry = None
         self._ticker_page_start = 0
         self._anim.ticker.reset()
         self._anim.page_flip.reset()
@@ -109,8 +118,6 @@ class CarouselLayout(BaseLayout):
     def next_render_ms(self, providers: List[BaseProvider],
                        now_ms: int) -> Optional[int]:
         """低功耗模式下定时唤醒一帧，用于静态翻到下一块内容。"""
-        if self.animations_enabled:
-            return None
         next_times = []
         if len(providers) > 1:
             if self._last_switch == 0:
@@ -118,7 +125,7 @@ class CarouselLayout(BaseLayout):
             else:
                 next_times.append(self._last_switch + self._effective_interval_ms())
 
-        if providers and self._last_surface_w:
+        if not self.animations_enabled and providers and self._last_surface_w:
             provider = providers[self._current_idx % len(providers)]
             content = provider.get_content()
             if (content.ticker and

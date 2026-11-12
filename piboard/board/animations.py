@@ -27,6 +27,9 @@ class TickerAnimation:
             self._text = text
             self._text_w, _ = measure_text(text, FontSize.SMALL)
             self._offset = 0.0
+            self._last_ticks = 0
+        if not text:
+            self._last_ticks = 0
         self._running = bool(text)
 
     def update(self) -> int:
@@ -78,8 +81,8 @@ class PageFlipAnimation:
         self._flipping = False
         self._last_page_time = pygame.time.get_ticks()
 
-    def update(self) -> int:
-        """返回当前 rows 区域纵向滚动偏移（像素）。"""
+    def update(self, animate: bool = True) -> int:
+        """Return the row-page offset, with an instant step in static mode."""
         now = pygame.time.get_ticks()
 
         # 只有超过一页才翻
@@ -90,8 +93,11 @@ class PageFlipAnimation:
         if not self._flipping and now - self._last_page_time > self.interval_ms:
             self._page = (self._page + 1) % self._total_pages
             self._flip_start = now
-            self._flipping = True
+            self._flipping = animate
             self._last_page_time = now
+            if self._page == 0:
+                self._flipping = False
+                return 0
 
         # 翻页动画中：线性插值
         if self._flipping:
@@ -142,6 +148,8 @@ class ContentTransitionAnimation:
         if not self._active:
             target.blit(new_surface, (0, 0))
             return False
+
+        target.fill((8, 8, 8))
 
         now = pygame.time.get_ticks()
         elapsed = now - self._start
@@ -209,7 +217,8 @@ class AnimationController:
           ticker_offset, rows_scroll_offset
         """
         if not self.enabled:
-            return {"ticker_offset": 0, "rows_scroll_offset": 0}
+            return {"ticker_offset": 0,
+                    "rows_scroll_offset": self.page_flip.update(animate=False)}
         return {
             "ticker_offset":      self.ticker.update(),
             "rows_scroll_offset": self.page_flip.update(),

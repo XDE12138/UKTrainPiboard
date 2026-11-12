@@ -108,6 +108,14 @@ class UKStationApp(BaseApp):
 
         providers = self._active_providers()
         next_times = []
+        layout = self._current_layout
+        controllers = getattr(layout, "_anims", [])
+        if hasattr(layout, "_anim"):
+            controllers = [layout._anim]
+        for anim in controllers:
+            page = anim.page_flip
+            if page._total_pages > 1 and not page._flipping:
+                next_times.append(page._last_page_time + page.interval_ms + 1)
         layout_next = self._current_layout.next_render_ms(providers, now_ms)
         if layout_next is not None:
             next_times.append(layout_next)

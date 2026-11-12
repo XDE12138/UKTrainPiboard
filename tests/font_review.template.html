@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PiBoard 字形核查</title>
+<style>
+:root{color-scheme:dark;--bg:#111214;--panel:#1b1d20;--line:#3c4045;--text:#eceeea;--muted:#adb2b8;--amber:#f0b54d;--green:#75cf94;--red:#ff8b82;--stage:312px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;letter-spacing:0}
+button,input,select{font:inherit}button,select{cursor:pointer}button,input,select{min-height:40px;border:1px solid var(--line);border-radius:4px;color:var(--text);background:var(--panel)}
+button{padding:7px 12px}button:hover{border-color:var(--muted)}button[aria-pressed=true],label:has(input:checked){border-color:var(--amber);background:#2a2418;color:var(--amber)}
+.segments label:has(input:disabled),select:disabled{opacity:.5;cursor:default}
+input[type=search],input[type=text]{width:100%;padding:9px 12px}select{padding:7px 10px}button,input,select{touch-action:manipulation}:focus-visible{outline:2px solid var(--amber);outline-offset:3px}[hidden]{display:none!important}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line);padding:16px 24px}h1{font-size:20px;margin:0}h2,h3{font-size:15px;margin:0;font-weight:600}p{margin:0}.muted{color:var(--muted)}.candidate{color:var(--amber);font-size:12px;white-space:nowrap}
+.toolbar{padding:16px 24px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)}.control{display:flex;align-items:center;gap:10px}.control>span{color:var(--muted);font-size:12px}.segments{display:flex;gap:4px;flex-wrap:wrap}.segments label{display:flex;align-items:center;gap:5px;padding:6px 10px;border:1px solid var(--line);border-radius:4px;min-height:40px;cursor:pointer}.segments input{accent-color:var(--amber);margin:0;min-height:0;width:14px;height:14px}
+.layout{display:grid;grid-template-columns:280px minmax(0,1fr);max-width:1640px;margin:auto}aside{border-right:1px solid var(--line);padding:20px 16px;min-width:0}.inventory{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.group-filter{margin:12px 0;display:flex;gap:5px;flex-wrap:wrap}.group-filter button{font-size:12px;padding:7px 9px}.glyph-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;max-height:calc(100dvh - 330px);overflow-y:auto;padding:3px}.glyph-button{height:64px;min-width:0;padding:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;position:relative}.glyph-button .letter{font-size:23px;font-family:ui-monospace,monospace;line-height:1.2}.glyph-button small{font-size:10px;color:var(--muted)}.glyph-button.changed::after{content:"";position:absolute;right:6px;top:6px;width:5px;height:5px;background:var(--amber);border-radius:50%}.empty{padding:16px 0;color:var(--muted)}
+main{padding:20px 24px 48px;min-width:0}.selection{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.selection h2{font-size:18px}.reason{color:var(--muted);min-height:24px;margin-bottom:16px}.comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.specimen{min-width:0;border-top:1px solid var(--line)}.specimen-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}.specimen-head span{font:12px ui-monospace,monospace;color:var(--muted)}.native-stage,.zoom-stage{background:#080808;display:flex;align-items:center;justify-content:center;overflow:auto}.native-stage{height:80px}.zoom-stage{height:var(--stage);margin-top:8px;justify-content:flex-start}.zoom-stage canvas{margin:auto;flex:none}.stage-label{font-size:12px;color:var(--muted);margin:4px 0}.specimen canvas{display:block;image-rendering:pixelated;flex:none;max-width:none}
+.detail{border-top:1px solid var(--line);margin-top:24px;padding-top:16px}.detail-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}.legend span{display:inline-flex;gap:6px;align-items:center}.swatch{width:8px;height:8px;border-radius:50%;display:inline-block}.point-diff{margin:12px 0;overflow:auto;background:#080808;min-height:120px;display:flex;align-items:center;justify-content:center}.point-diff canvas{image-rendering:pixelated;flex:none}.diff-note{color:var(--muted);font-size:12px}.sample-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}.sample-controls input{flex:1;min-width:180px}.sample-row{padding:16px 0;border-top:1px solid var(--line)}.sample-row h3{font:13px ui-monospace,monospace;color:var(--muted);margin-bottom:10px;overflow-wrap:anywhere}.word-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.word-column{min-width:0}.word-column p{font-size:12px;color:var(--muted);margin-bottom:6px}.word-stage{height:96px;background:#080808;overflow:auto;display:flex;align-items:center}.word-stage canvas{margin:0 12px;flex:none;image-rendering:pixelated}.invalid{color:var(--red);margin-bottom:12px}.footer{margin-top:28px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.screen-view .layout{display:block;max-width:1320px}.screen-view aside{display:none}.board-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}.board-pair>section{min-width:0}.board-stage{overflow:auto;max-width:100%;background:#080808}.board-stage img{display:block;width:600px;height:1024px;max-width:none;image-rendering:pixelated}.board-pair h3{margin-bottom:8px}
+@media(max-width:1000px){.layout{grid-template-columns:220px minmax(0,1fr)}.glyph-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:800px){header,.toolbar{padding:14px 16px}.layout{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line);padding:16px}.glyph-list{grid-template-columns:repeat(8,minmax(0,1fr));max-height:154px}.glyph-button{height:60px}.inventory{margin-bottom:8px}main{padding:20px 16px 36px}.comparison,.word-pair{grid-template-columns:1fr}.candidate{font-size:11px}.toolbar{gap:12px}.control{flex-wrap:wrap}button,select,.segments label{min-height:44px}.group-filter button{min-height:44px}}
+@media(max-width:420px){.glyph-list{grid-template-columns:repeat(6,minmax(0,1fr))}h1{font-size:18px}.candidate{white-space:normal;max-width:95px;text-align:right}.segments label{padding:6px 8px}.selection{align-items:flex-start;flex-direction:column}.specimen-head{flex-wrap:wrap}.legend{gap:10px}}
+@media(max-width:1000px){.board-pair{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header><h1>PiBoard 字形核查</h1><span class="candidate">{% if data.deployment is defined %}人工通过 · 已部署 Pi{% else %}本地候选 · Pi 未更新{% endif %}</span></header>
+<div class="toolbar">
+  <div class="control"><span id="size-label">字号</span><div class="segments" role="group" aria-labelledby="size-label">
+    <label><input type="radio" name="size" value="SMALL">小</label>
+    <label><input type="radio" name="size" value="MEDIUM">中</label>
+    <label><input type="radio" name="size" value="LARGE">大</label>
+    <label><input type="radio" name="size" value="XLARGE" checked>特大</label>
+  </div></div>
+  <div class="control"><label for="zoom">点阵放大</label><select id="zoom"><option value="2">2×</option><option value="4" selected>4×</option><option value="8">8×</option></select></div>
+  <div class="segments" role="group" aria-label="核查视图"><button id="view-glyph" aria-pressed="true">逐字</button><button id="view-words" aria-pressed="false">词句</button><button id="view-screen" aria-pressed="false">整屏</button></div>
+</div>
+<div class="layout">
+<aside>
+  <div class="inventory"><h2>核查字符</h2><span id="count" class="muted"></span></div>
+  <input id="search" type="search" placeholder="查找字符，例如 S" aria-label="查找字符">
+  <div class="group-filter" role="group" aria-label="字符分类">
+    <button data-group="changed" aria-pressed="true">已调整</button><button data-group="all" aria-pressed="false">全部</button><button data-group="letters" aria-pressed="false">字母</button><button data-group="numbers" aria-pressed="false">数字</button><button data-group="symbols" aria-pressed="false">符号</button><button data-group="cjk" aria-pressed="false">中文样本</button>
+  </div>
+  <div id="glyph-list" class="glyph-list" aria-label="选择核查字符"></div>
+  <p id="empty" class="empty" hidden>没有匹配字符</p>
+</aside>
+<main>
+<section id="glyph-view">
+  <div class="selection"><h2 id="selected-title">字符 S</h2><span class="muted" id="selected-info"></span></div>
+  <p id="reason" class="reason"></p>
+  <p id="spacing-note" class="diff-note" style="margin-bottom:12px"></p>
+  <div class="comparison">
+    <section class="specimen"><div class="specimen-head"><h3>修改前</h3><span id="before-dim"></span></div><p class="stage-label">原尺寸</p><div class="native-stage"><canvas id="before-native" role="img" aria-label="修改前原尺寸字形"></canvas></div><p class="stage-label">放大</p><div class="zoom-stage"><canvas id="before-zoom" role="img" aria-label="修改前放大字形"></canvas></div></section>
+    <section class="specimen"><div class="specimen-head"><h3>修改后</h3><span id="after-dim"></span></div><p class="stage-label">原尺寸</p><div class="native-stage"><canvas id="after-native" role="img" aria-label="修改后原尺寸字形"></canvas></div><p class="stage-label">放大</p><div class="zoom-stage"><canvas id="after-zoom" role="img" aria-label="修改后放大字形"></canvas></div></section>
+  </div>
+  <div class="detail"><div class="detail-head"><h3>字模点位差异</h3><div class="legend"><span><i class="swatch" style="background:#75cf94"></i>新增</span><span><i class="swatch" style="background:#ff8b82"></i>移除</span><span><i class="swatch" style="background:#89929a"></i>保留</span></div></div><div class="point-diff"><canvas id="diff" role="img" aria-label="字模新增与移除点位"></canvas></div><p id="diff-note" class="diff-note"></p></div>
+</section>
+<section id="words-view" hidden>
+  <div class="sample-controls"><input id="custom-text" type="text" value="S SERVICES STATUS" maxlength="80" aria-label="输入核查词句"><div class="control"><label for="word-zoom">词句倍率</label><select id="word-zoom"><option value="1">1×</option><option value="2">2×</option></select></div></div>
+  <p id="invalid" class="invalid" role="status" hidden></p><div id="samples"></div>
+</section>
+<section id="screen-view" hidden><h2>600 × 1024 整屏对照</h2><p class="muted">本地模拟数据 · 原始像素尺寸</p><div class="board-pair"><section><h3>修改前</h3><div class="board-stage"><img id="before-board" alt="修改前完整站牌字体与字距" width="600" height="1024"></div></section><section><h3>修改后</h3><div class="board-stage"><img id="after-board" alt="修改后完整站牌字体与字距" width="600" height="1024"></div></section></div></section>
+<p class="footer" id="provenance"></p>
+</main></div>
+<script id="font-data" type="application/json">{{ data | tojson }}</script>
+<script>
+'use strict';
+const data=JSON.parse(document.getElementById('font-data').textContent);
+const $=id=>document.getElementById(id);
+const images={before:new Image(),after:new Image()};
+let size='XLARGE', selected='S', group='changed', view='glyph';
+const changes=new Map(data.changed.map(item=>[item.char,item]));
+const glyph=(phase,ch)=>data[phase].glyphs[size][ch];
+function displayName(char){return char===' '?'空格':char;}
+function visibleChars(){
+  const search=$('search').value.toLocaleLowerCase();
+  return data.characters.filter(ch=>(!search||ch.toLocaleLowerCase().includes(search))&&(
+    group==='all'||group==='changed'&&changes.has(ch)||group==='letters'&&/^[A-Za-z]$/.test(ch)||group==='numbers'&&/^\d$/.test(ch)||group==='symbols'&&(!/^[A-Za-z0-9]$/.test(ch)&&ch.charCodeAt(0)<256)||group==='cjk'&&ch.charCodeAt(0)>255));
+}
+function renderList(){
+  const chars=visibleChars();$('count').textContent=`${chars.length} / ${data.characters.length}`;
+  $('empty').hidden=!!chars.length;
+  $('glyph-list').replaceChildren(...chars.map(char=>{
+    const button=document.createElement('button');button.type='button';button.className='glyph-button'+(changes.has(char)?' changed':'');
+    button.dataset.char=char;button.setAttribute('aria-label',`查看 ${displayName(char)}`);button.setAttribute('aria-pressed',String(char===selected));
+    const letter=document.createElement('span');letter.className='letter';letter.textContent=char===' '?'␣':char;
+    const code=document.createElement('small');code.textContent=char.codePointAt(0).toString(16).toUpperCase().padStart(4,'0');
+    button.append(letter,code);button.addEventListener('click',()=>{selected=char;setView('glyph');$('glyph-list').querySelectorAll('button').forEach(el=>el.setAttribute('aria-pressed',String(el===button)));renderGlyph();});return button;
+  }));
+}
+function drawGlyph(canvas,phase,char,scale){
+  const [x,y,w,h]=glyph(phase,char).rect;canvas.width=w*scale;canvas.height=h*scale;
+  const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.drawImage(images[phase],x,y,w,h,0,0,w*scale,h*scale);
+}
+function renderGlyph(){
+  const before=glyph('before',selected), after=glyph('after',selected);
+  const changed=JSON.stringify(before.bitmap)!==JSON.stringify(after.bitmap);
+  $('selected-title').textContent=`字符 ${displayName(selected)}`;
+  $('selected-info').textContent=`${size} · ${after.native?'原生字模':after.bitmap?'5×7 居中复用':'内置中文字体'} · ${changed?'已调整':'未调整'}`;
+  $('reason').textContent=changed?changes.get(selected).reason:changes.has(selected)?'本字号保留原字形；其他字号的改动可切换查看。':'保留现有字形，供完整字库核查。';
+  const previousGap=data.before.tracking[size],nextGap=data.after.tracking[size];
+  const previousCjk=previousGap,nextCjk=data.after.cjk_gap[size];
+  $('spacing-note').textContent=`字符附加间距 ${previousGap} → ${nextGap} px · 中文相邻附加间距 ${previousCjk} → ${nextCjk} px`;
+  const zoom=Number($('zoom').value);document.documentElement.style.setProperty('--stage',`${72*zoom+8}px`);
+  for(const phase of ['before','after']){
+    const g=glyph(phase,selected);$(phase+'-dim').textContent=`${g.rect[2]} × ${g.rect[3]} px`;
+    drawGlyph($(phase+'-native'),phase,selected,1);drawGlyph($(phase+'-zoom'),phase,selected,zoom);
+  }
+  drawDiff(before,after);
+}
+function drawDiff(before,after){
+  const canvas=$('diff'),ctx=canvas.getContext('2d');
+  if(!before.bitmap||!after.bitmap){canvas.width=0;canvas.height=0;$('diff-note').textContent='此字符由内置中文字体渲染，本轮未修改。';return;}
+  const cols=after.columns,rows=after.bitmap.length,cell=18;
+  canvas.width=cols*cell;canvas.height=rows*cell;ctx.fillStyle='#080808';ctx.fillRect(0,0,canvas.width,canvas.height);
+  let added=0,removed=0;
+  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+    const a=(before.bitmap[y]>>(cols-1-x))&1,b=(after.bitmap[y]>>(cols-1-x))&1;
+    if(!a&&!b){ctx.fillStyle='#262728';}else if(a&&b){ctx.fillStyle='#89929a';}else if(b){ctx.fillStyle='#75cf94';added++;}else{ctx.fillStyle='#ff8b82';removed++;}
+    ctx.beginPath();ctx.arc(x*cell+cell/2,y*cell+cell/2,5,0,Math.PI*2);ctx.fill();
+  }
+  $('diff-note').textContent=`${cols} × ${rows} 点阵 · 新增 ${added} 点 · 移除 ${removed} 点`;
+}
+function normalize(text){return text.replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—−•]/g,'-').replace(/…/g,'...').replace(/[\r\n\t\u00a0]/g,' ');}
+function drawWord(canvas,phase,text,scale){
+  const chars=Array.from(normalize(text));const baseGap=data[phase].tracking[size];
+  const gaps=chars.map((ch,i)=>i===0?0:(data[phase].gap_strategy==='unicode_minimum'&&(!glyph(phase,ch).bitmap||!glyph(phase,chars[i-1]).bitmap)?data[phase].cjk_gap[size]:baseGap));
+  const widths=chars.map(ch=>glyph(phase,ch).rect[2]);const height=Math.max(1,...chars.map(ch=>glyph(phase,ch).rect[3]));
+  const width=widths.reduce((a,b)=>a+b,0)+gaps.reduce((a,b)=>a+b,0);
+  canvas.width=Math.max(1,width)*scale;canvas.height=height*scale;
+  const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.fillStyle='#080808';ctx.fillRect(0,0,canvas.width,canvas.height);
+  let x=0;for(const [i,char] of chars.entries()){x+=gaps[i];const [sx,sy,w,h]=glyph(phase,char).rect;ctx.drawImage(images[phase],sx,sy,w,h,x*scale,Math.floor((height-h)/2)*scale,w*scale,h*scale);x+=w;}
+}
+function renderWords(){
+  const custom=$('custom-text').value;const unknown=[...new Set(Array.from(normalize(custom)).filter(ch=>!glyph('after',ch)))];
+  $('invalid').hidden=!unknown.length;$('invalid').textContent=`当前对照未包含：${unknown.join(' ')}。`;
+  const texts=[...new Set([...(unknown.length||!custom?[]:[custom]),...data.samples])];
+  const scale=Number($('word-zoom').value);$('samples').replaceChildren(...texts.map(text=>{
+    const row=document.createElement('section');row.className='sample-row';const heading=document.createElement('h3');heading.textContent=text;
+    const pair=document.createElement('div');pair.className='word-pair';
+    for(const phase of ['before','after']){const col=document.createElement('div');col.className='word-column';const name=document.createElement('p');name.textContent=phase==='before'?'修改前':'修改后';const stage=document.createElement('div');stage.className='word-stage';const canvas=document.createElement('canvas');canvas.setAttribute('role','img');canvas.setAttribute('aria-label',`${name.textContent}：${text}`);drawWord(canvas,phase,text,scale);stage.style.height=`${72*scale+24}px`;stage.append(canvas);col.append(name,stage);pair.append(col);}
+    row.append(heading,pair);return row;
+  }));
+}
+function setView(next){view=next;for(const name of ['glyph','words','screen']){$(name+'-view').hidden=next!==name;$('view-'+name).setAttribute('aria-pressed',String(next===name));}document.body.classList.toggle('screen-view',next==='screen');document.querySelectorAll('input[name=size]').forEach(el=>el.disabled=next==='screen');$('zoom').disabled=next!=='glyph';if(next==='words')renderWords();}
+document.querySelectorAll('input[name=size]').forEach(input=>input.addEventListener('change',()=>{size=input.value;renderGlyph();if(view==='words')renderWords();}));
+$('zoom').addEventListener('change',renderGlyph);$('word-zoom').addEventListener('change',renderWords);$('search').addEventListener('input',renderList);$('custom-text').addEventListener('input',renderWords);
+document.querySelectorAll('[data-group]').forEach(button=>button.addEventListener('click',()=>{group=button.dataset.group;document.querySelectorAll('[data-group]').forEach(el=>el.setAttribute('aria-pressed',String(el===button)));renderList();}));
+$('view-glyph').addEventListener('click',()=>setView('glyph'));$('view-words').addEventListener('click',()=>setView('words'));
+$('view-screen').addEventListener('click',()=>setView('screen'));
+Promise.all(Object.entries(images).map(([phase,image])=>new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=data[phase].image;}))).then(()=>{
+  $('provenance').textContent=`${data.date} · pygame 实际栅格快照 · 修改前 ${data.before.sha256.slice(0,12)} · 修改后 ${data.after.sha256.slice(0,12)}`;
+  for(const phase of ['before','after'])$(phase+'-board').src=data.boards[phase];
+  renderList();renderGlyph();document.body.dataset.ready='true';
+}).catch(()=>{$('reason').textContent='字形快照载入失败，请重新打开此文件。';});
+</script>
+</body></html>

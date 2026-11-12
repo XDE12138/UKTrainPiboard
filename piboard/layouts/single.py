@@ -28,6 +28,8 @@ class SingleLayout(BaseLayout):
         )
         self._last_provider_id: str = ""
         self._last_ticker: str = ""
+        self._last_rows_count = -1
+        self._last_geometry = None
         self._last_surface_w: int = 0
         self._ticker_page_start: int = 0
         self._work_surf: pygame.Surface = None
@@ -52,17 +54,20 @@ class SingleLayout(BaseLayout):
         ticker_text = content.ticker or ""
         provider_changed = content.provider_id != self._last_provider_id
         ticker_changed = ticker_text != self._last_ticker
-        if provider_changed or ticker_changed:
+        rows_h = self._renderer.get_rows_area_height(h, bool(content.ticker), content, w)
+        row_h = self._renderer.get_row_height(h, content, w)
+        geometry = (w, h, rows_h, row_h)
+        if (provider_changed or ticker_changed or len(content.rows) != self._last_rows_count
+                or geometry != self._last_geometry):
             if provider_changed and self._last_provider_id:
                 self._anim.trigger_transition(screen)
             self._last_provider_id = content.provider_id
             self._last_ticker = ticker_text
+            self._last_rows_count = len(content.rows)
+            self._last_geometry = geometry
             self._ticker_page_start = pygame.time.get_ticks()
 
             # 重置动画参数
-            rows_h = self._renderer.get_rows_area_height(
-                h, bool(content.ticker), content, w)
-            row_h = self._renderer.get_row_height(h, content, w)
             self._anim.set_content(content, area_h=rows_h, row_h=row_h)
 
         # 更新动画
@@ -85,6 +90,8 @@ class SingleLayout(BaseLayout):
     def on_providers_changed(self, providers: List[BaseProvider]):
         self._last_provider_id = ""
         self._last_ticker = ""
+        self._last_rows_count = -1
+        self._last_geometry = None
         self._ticker_page_start = 0
         self._anim.ticker.reset()
         self._anim.page_flip.reset()

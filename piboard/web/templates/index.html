@@ -6,27 +6,33 @@
 <title>PiBoard 控制台</title>
 <style>
 :root {
-  --bg: #0d1117;
-  --panel: #161b22;
-  --panel-2: #21262d;
-  --panel-3: #2d333b;
-  --border: #30363d;
-  --border-2: #3d444d;
-  --text: #e6edf3;
-  --muted: #7d8590;
-  --faint: #656d76;
-  --accent: #2f81f7;
-  --accent-bg: rgba(47, 129, 247, .14);
-  --green: #3fb950;
+  color-scheme: dark;
+  --bg: #101113;
+  --panel: #181a1d;
+  --panel-2: #222529;
+  --panel-3: #303438;
+  --border: #373b40;
+  --border-2: #555a60;
+  --text: #eceeeb;
+  --muted: #a6abb2;
+  --faint: #9399a1;
+  --accent: #f0b54d;
+  --accent-bg: rgba(240, 181, 77, .10);
+  --green: #74cd91;
   --green-bg: rgba(63, 185, 80, .12);
-  --red: #f85149;
+  --red: #ff8d85;
   --red-bg: rgba(248, 81, 73, .12);
-  --yellow: #d29922;
+  --yellow: #edc36e;
   --radius: 6px;
   --sidebar-w: 184px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html { letter-spacing: 0; }
+button, input, select, textarea { touch-action: manipulation; }
+button { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+[hidden] { display: none !important; }
 body {
   height: 100dvh;
   display: flex;
@@ -41,7 +47,7 @@ body {
 }
 
 .app-header {
-  height: 48px;
+  height: 56px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -52,7 +58,9 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; }
-.brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.ui-icon { width: 18px; height: 18px; flex: 0 0 18px; filter: invert(.8); }
+.nav-item.active .ui-icon { filter: invert(.77) sepia(.65) saturate(1.8); }
 .header-actions { display: flex; align-items: center; gap: 10px; }
 .status-pill {
   min-height: 26px;
@@ -79,7 +87,7 @@ body {
 }
 .nav-item {
   width: 100%;
-  min-height: 36px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -94,16 +102,19 @@ body {
   text-align: left;
 }
 .nav-item:hover { background: var(--panel-2); color: var(--text); }
-.nav-item.active { background: var(--accent-bg); color: var(--accent); }
+.nav-item.active { background: var(--accent-bg); color: var(--accent); box-shadow: inset 2px 0 var(--accent); }
 .nav-icon { width: 20px; text-align: center; flex-shrink: 0; }
 
 .content {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  padding: 20px;
-  padding-bottom: 84px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 24px;
+  padding-bottom: 40px;
 }
+.page { max-width: 1440px; margin: 0 auto; }
 .page { display: none; }
 .page.active { display: block; }
 .page-head {
@@ -113,25 +124,33 @@ body {
   gap: 16px;
   margin-bottom: 16px;
 }
-.page-title { font-size: 22px; font-weight: 750; letter-spacing: 0; }
+.page-title { font-size: 22px; font-weight: 700; letter-spacing: 0; }
 .page-desc { color: var(--muted); font-size: 13px; margin-top: 3px; }
 
 .section-title {
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: .04em;
-  margin: 18px 0 10px;
+  letter-spacing: 0;
+  margin: 24px 0 12px;
 }
 .grid { display: grid; gap: 12px; }
 .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.page-card, .panel, .source-card, .status-card {
+.page-card, .source-card, .status-card {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
 }
+.panel { border-block: 1px solid var(--border); }
+.card-head > div:first-child { min-width: 0; }
+.card-title, .card-subtitle { overflow-wrap: anywhere; }
+.page-card { min-width: 0; align-self: start; }
+.page-card .card-head { align-items: stretch; flex-direction: column; }
+.page-card .card-head .btn-row { justify-content: flex-end; }
+.page-card.is-current { border-color: var(--accent); }
+.current-label { display: inline-block; margin-left: 8px; font-size: 12px; color: var(--accent); font-weight: 500; }
 .card-head {
   min-height: 50px;
   display: flex;
@@ -141,7 +160,7 @@ body {
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
 }
-.card-title { font-weight: 700; }
+.card-title { font-size: 14px; font-weight: 700; }
 .card-subtitle { color: var(--muted); font-size: 12px; margin-top: 1px; }
 .card-body { padding: 14px; }
 
@@ -151,9 +170,7 @@ body {
   gap: 10px;
 }
 .metric {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-left: 2px solid var(--border);
   padding: 11px 12px;
 }
 .metric-label { color: var(--muted); font-size: 12px; }
@@ -161,7 +178,7 @@ body {
 
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .btn {
-  min-height: 34px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -172,44 +189,57 @@ body {
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
 }
-.btn:disabled { opacity: .55; cursor: wait; }
+.btn:disabled { opacity: .65; cursor: not-allowed; }
+.btn[aria-busy=true] { cursor: progress; }
 .btn[disabled][data-action="use-current-location"] { cursor: not-allowed; }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
-.btn-primary:hover:not(:disabled) { background: #388bfd; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #19150d; }
+.btn-primary:hover:not(:disabled) { background: #f7c775; }
+.app-switch-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 .btn-outline { border-color: var(--border-2); }
 .btn-outline:hover:not(:disabled) { background: var(--panel-2); }
 .btn-ghost { color: var(--muted); }
 .btn-ghost:hover:not(:disabled) { background: var(--panel-2); color: var(--text); }
-.btn-sm { min-height: 30px; padding: 5px 10px; font-size: 12px; }
+.btn-sm { min-height: 36px; padding: 6px 10px; font-size: 13px; }
 
 .field { margin-bottom: 12px; }
-.field label {
+.field label, .field-legend {
   display: block;
   margin-bottom: 5px;
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 650;
+  font-size: 13px;
+  font-weight: 500;
 }
+.field-legend { display: block; margin-bottom: 5px; }
+.field label.toggle-control { display: flex; align-items: center; gap: 10px; min-height: 40px; color: var(--text); cursor: pointer; }
+.toggle-control input { accent-color: var(--accent); }
+.load-state { border-left: 2px solid var(--accent); padding: 12px; margin-bottom: 20px; color: var(--muted); }
+.load-state.error { border-color: var(--red); }
+.load-state .btn { margin-top: 10px; }
+.color-field { display: flex; align-items: center; gap: 10px; }
+.color-sample { width: 16px; height: 16px; flex: 0 0 16px; border: 1px solid rgba(255,255,255,.25); border-radius: 50%; }
 .field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 input[type=text], input[type=password], input[type=number], select, textarea {
   width: 100%;
-  min-height: 34px;
+  min-height: 40px;
   padding: 7px 9px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--panel-2);
   color: var(--text);
   font: inherit;
-  outline: none;
+  min-width: 0;
 }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-input[type=range] { width: 100%; accent-color: var(--accent); }
+input[type=range] { width: 100%; height: 40px; accent-color: var(--accent); cursor: pointer; }
+input::placeholder, textarea::placeholder { color: var(--faint); }
+input[type=checkbox] { width: 16px; height: 16px; flex-shrink: 0; }
+.brightness-value { float: right; color: var(--text); font-variant-numeric: tabular-nums; }
 textarea { min-height: 78px; resize: vertical; }
 .check-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.check-item {
+.field label.check-item {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -217,12 +247,22 @@ textarea { min-height: 78px; resize: vertical; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--panel-2);
+  min-height: 40px;
+  color: var(--text);
+  margin: 0;
+  cursor: pointer;
 }
+.check-item:has(input:checked) { border-color: var(--border-2); }
 .check-item input { accent-color: var(--accent); }
 
 .source-card.open .source-body { display: block; }
 .source-body { display: none; border-top: 1px solid var(--border); padding: 14px; }
-.source-toggle { cursor: pointer; }
+.source-toggle { width: 100%; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.source-toggle:hover { background: var(--panel-2); }
+.source-toggle:focus-visible { outline-offset: -3px; }
+.source-toggle > span:first-child { min-width: 0; }
+.source-toggle .card-title, .source-toggle .card-subtitle { display: block; }
+.location-fields { border: 0; padding: 0 0 16px; margin: 0 0 16px; border-bottom: 1px solid var(--border); min-width: 0; }
 .chevron { color: var(--muted); transition: transform .15s; }
 .source-card.open .chevron { transform: rotate(90deg); }
 
@@ -233,15 +273,15 @@ textarea { min-height: 78px; resize: vertical; }
 }
 .row-editor-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(90px, 160px) 34px;
+  grid-template-columns: minmax(0, 1fr) minmax(80px, 140px) 40px;
   gap: 7px;
   align-items: center;
   padding: 7px;
   border-bottom: 1px solid var(--border);
 }
 .row-editor-item:last-child { border-bottom: 0; }
-.row-editor-item input { min-height: 30px; }
-.row-editor-item .del { min-width: 30px; padding: 0; }
+.row-editor-item .del { min-width: 40px; padding: 0; font-size: 22px; }
+.rows-empty { padding: 14px; color: var(--muted); font-size: 13px; }
 
 .layout-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .layout-card {
@@ -251,6 +291,7 @@ textarea { min-height: 78px; resize: vertical; }
   background: var(--panel-2);
   color: var(--muted);
   cursor: pointer;
+  font: inherit;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -268,6 +309,7 @@ textarea { min-height: 78px; resize: vertical; }
 .status-card { padding: 12px; }
 .status-label { color: var(--muted); font-size: 12px; }
 .status-value { margin-top: 4px; font-weight: 750; word-break: break-word; }
+.metric-value, .status-value { font-variant-numeric: tabular-nums; }
 .status-good { color: var(--green); }
 .status-warn { color: var(--yellow); }
 .status-bad { color: var(--red); }
@@ -277,6 +319,9 @@ textarea { min-height: 78px; resize: vertical; }
   right: 18px;
   bottom: 18px;
   max-width: 320px;
+  max-height: min(35dvh, 240px);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
   display: none;
   z-index: 20;
   padding: 10px 14px;
@@ -313,15 +358,39 @@ textarea { min-height: 78px; resize: vertical; }
 }
 .bottom-nav .nav-icon { width: auto; }
 
+@media (max-width: 1100px) {
+  .grid.two { grid-template-columns: 1fr; }
+  .summary-strip, .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 840px) {
-  .grid.two, .grid.three, .summary-strip, .status-grid { grid-template-columns: 1fr; }
+  .grid.three { grid-template-columns: 1fr; }
+  .card-head { flex-wrap: wrap; }
 }
 @media (max-width: 640px) {
   .sidebar { display: none; }
   .bottom-nav { display: flex; }
-  .content { padding: 14px; padding-bottom: 78px; }
-  .page-head { flex-direction: column; }
-  .field-row, .check-grid, .layout-grid { grid-template-columns: 1fr; }
+  .bottom-nav { padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+  .content { padding: 16px; padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .page-head { flex-direction: row; align-items: center; gap: 12px; }
+  .field-row { grid-template-columns: 1fr; }
+  .btn, .btn-sm, .row-editor-item .del { min-height: 44px; }
+  input[type=text], input[type=password], input[type=number], select, textarea { min-height: 44px; font-size: 16px; }
+  .card-head { padding: 14px; }
+  .card-head .btn-row { width: 100%; }
+  .page-card .card-head .btn-row { justify-content: flex-start; }
+  .page-card .card-head .btn-row .btn { flex: 1; }
+  .app-header { padding: 0 16px; }
+  .nav-item.active { box-shadow: inset 0 2px var(--accent); }
+  #notif { left: 16px; right: 16px; max-width: none; bottom: calc(78px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 360px) {
+  .summary-strip, .status-grid { grid-template-columns: 1fr; }
+  .row-editor-item { grid-template-columns: minmax(0, 1fr) 40px; }
+  .row-editor-item .row-right { grid-column: 1; }
+  .row-editor-item .del { grid-column: 2; grid-row: 1 / 3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
 </style>
 </head>
@@ -338,25 +407,28 @@ textarea { min-height: 78px; resize: vertical; }
 
 <div class="app-body">
   <nav class="sidebar" aria-label="主导航">
-    <button class="nav-item active" data-page="content"><span class="nav-icon">▣</span>页面内容</button>
-    <button class="nav-item" data-page="sources"><span class="nav-icon">◇</span>数据源</button>
-    <button class="nav-item" data-page="status"><span class="nav-icon">●</span>设备状态</button>
-    <button class="nav-item" data-page="settings"><span class="nav-icon">⚙</span>显示设置</button>
+    <button class="nav-item active" data-page="content" aria-current="page"><img class="ui-icon" src="/static/icons/panels-top-left.svg" alt="">页面内容</button>
+    <button class="nav-item" data-page="sources"><img class="ui-icon" src="/static/icons/database.svg" alt="">数据源</button>
+    <button class="nav-item" data-page="status"><img class="ui-icon" src="/static/icons/activity.svg" alt="">设备状态</button>
+    <button class="nav-item" data-page="settings"><img class="ui-icon" src="/static/icons/settings-2.svg" alt="">显示设置</button>
   </nav>
 
   <main class="content">
+    <div id="load-state" class="load-state" role="status">
+      <p id="load-message">正在读取设备数据…</p>
+      <button class="btn btn-outline btn-sm" data-action="retry-load" hidden>重新连接</button>
+    </div>
     <section class="page active" id="page-content">
       <div class="page-head">
         <div>
           <h1 class="page-title">页面内容</h1>
-          <p class="page-desc">选择当前显示页，调整低功耗轮播，并编辑各页面对应内容。</p>
         </div>
-        <button class="btn btn-outline" data-action="refresh-all">↻ 刷新状态</button>
+        <button class="btn btn-outline" data-action="refresh-all"><img class="ui-icon" src="/static/icons/refresh-cw.svg" alt="">刷新状态</button>
       </div>
       <div class="summary-strip" id="display-summary"></div>
-      <p class="section-title">低功耗轮播</p>
+      <h2 class="section-title">轮播设置</h2>
       <div id="cycle-panel"></div>
-      <p class="section-title">展示页面</p>
+      <h2 class="section-title">展示页面</h2>
       <div class="grid two" id="page-cards"></div>
     </section>
 
@@ -364,9 +436,8 @@ textarea { min-height: 78px; resize: vertical; }
       <div class="page-head">
         <div>
           <h1 class="page-title">数据源</h1>
-          <p class="page-desc">集中配置真实 API、mock 数据和自定义文本。</p>
         </div>
-        <button class="btn btn-outline" data-action="reload-sources">↻ 重新加载</button>
+        <button class="btn btn-outline" data-action="reload-sources"><img class="ui-icon" src="/static/icons/refresh-cw.svg" alt="">重新加载</button>
       </div>
       <div class="grid" id="source-list"></div>
     </section>
@@ -375,9 +446,8 @@ textarea { min-height: 78px; resize: vertical; }
       <div class="page-head">
         <div>
           <h1 class="page-title">设备状态</h1>
-          <p class="page-desc">查看连接、低功耗、方向、亮度，以及树莓派温度和 throttling。</p>
         </div>
-        <button class="btn btn-outline" data-action="refresh-device-status">↻ 刷新设备状态</button>
+        <button class="btn btn-outline" data-action="refresh-device-status"><img class="ui-icon" src="/static/icons/refresh-cw.svg" alt="">刷新设备状态</button>
       </div>
       <div class="status-grid" id="status-grid"></div>
     </section>
@@ -386,19 +456,18 @@ textarea { min-height: 78px; resize: vertical; }
       <div class="page-head">
         <div>
           <h1 class="page-title">显示设置</h1>
-          <p class="page-desc">调整亮度、主题、动画、方向和高级布局。</p>
         </div>
       </div>
 
-      <p class="section-title">运行 App</p>
+      <h2 class="section-title">运行页面</h2>
       <div class="panel">
         <div class="card-body">
           <div class="btn-row" id="app-switcher">
             {% for spec in app_catalog %}
             <button class="btn btn-outline app-switch-btn{% if loop.first %} active{% endif %}"
                     data-action="switch-app"
-                    data-app="{{ spec.app_id }}">
-              <span>{{ spec.icon }}</span>
+                    data-app="{{ spec.app_id }}" aria-pressed="false">
+              <img class="ui-icon" src="/static/icons/{% if spec.app_id == 'uk_station' %}train-front{% else %}monitor{% endif %}.svg" alt="">
               {% if spec.app_id == "uk_station" %}展示看板{% elif spec.app_id == "system_status" %}系统状态{% else %}{{ spec.label }}{% endif %}
             </button>
             {% endfor %}
@@ -406,12 +475,12 @@ textarea { min-height: 78px; resize: vertical; }
         </div>
       </div>
 
-      <p class="section-title">基础显示</p>
+      <h2 class="section-title">基础显示</h2>
       <div class="panel">
         <div class="card-body">
           <div class="field-row">
             <div class="field">
-              <label for="brightness">亮度</label>
+              <label for="brightness">亮度 <output id="brightness-value" class="brightness-value" for="brightness">100%</output></label>
               <input type="range" id="brightness" min="0.1" max="1" step="0.05" value="1">
             </div>
             <div class="field">
@@ -423,11 +492,11 @@ textarea { min-height: 78px; resize: vertical; }
               </select>
             </div>
             <div class="field">
-              <label for="animations_enabled">动画</label>
-              <select id="animations_enabled">
-                <option value="false">关闭（低功耗）</option>
-                <option value="true">开启</option>
-              </select>
+              <span class="field-legend" id="animations-label">动画</span>
+              <label class="toggle-control" for="animations_enabled">
+                <input type="checkbox" id="animations_enabled" role="switch" aria-labelledby="animations-label" aria-describedby="animation-state">
+                <span id="animation-state">关闭（低功耗）</span>
+              </label>
             </div>
             <div class="field">
               <label for="orientation">屏幕方向</label>
@@ -440,22 +509,22 @@ textarea { min-height: 78px; resize: vertical; }
         </div>
       </div>
 
-      <p class="section-title">高级布局</p>
+      <h2 class="section-title">高级布局</h2>
       <div class="panel">
         <div class="card-body">
           <div class="layout-grid" id="layout-grid">
-            <button class="layout-card active" data-layout="single">
+            <button class="layout-card active" data-layout="single" aria-pressed="true">
               <span class="layout-icon"><span class="block" style="width:48px;height:28px;"></span></span>
               <span>单页</span>
             </button>
-            <button class="layout-card" data-layout="dual">
+            <button class="layout-card" data-layout="dual" aria-pressed="false">
               <span class="layout-icon">
                 <span class="block" style="width:22px;height:28px;"></span>
                 <span class="block" style="width:22px;height:28px;"></span>
               </span>
               <span>双栏</span>
             </button>
-            <button class="layout-card" data-layout="carousel">
+            <button class="layout-card" data-layout="carousel" aria-pressed="false">
               <span class="layout-icon" style="flex-direction:column;gap:3px;">
                 <span class="block" style="width:48px;height:8px;"></span>
                 <span class="block" style="width:48px;height:8px;opacity:.6;"></span>
@@ -467,7 +536,7 @@ textarea { min-height: 78px; resize: vertical; }
           <p class="section-title">显示槽位</p>
           <div class="slots-row" id="slots-container"></div>
           <div class="btn-row" style="margin-top:14px;">
-            <button class="btn btn-primary" data-action="apply-layout">✓ 应用布局</button>
+            <button class="btn btn-primary" data-action="apply-layout">应用布局</button>
           </div>
         </div>
       </div>
@@ -476,13 +545,13 @@ textarea { min-height: 78px; resize: vertical; }
 </div>
 
 <nav class="bottom-nav" aria-label="底部导航">
-  <button class="nav-item active" data-page="content"><span class="nav-icon">▣</span>页面</button>
-  <button class="nav-item" data-page="sources"><span class="nav-icon">◇</span>数据源</button>
-  <button class="nav-item" data-page="status"><span class="nav-icon">●</span>状态</button>
-  <button class="nav-item" data-page="settings"><span class="nav-icon">⚙</span>设置</button>
+  <button class="nav-item active" data-page="content" aria-current="page"><img class="ui-icon" src="/static/icons/panels-top-left.svg" alt="">页面</button>
+  <button class="nav-item" data-page="sources"><img class="ui-icon" src="/static/icons/database.svg" alt="">数据源</button>
+  <button class="nav-item" data-page="status"><img class="ui-icon" src="/static/icons/activity.svg" alt="">状态</button>
+  <button class="nav-item" data-page="settings"><img class="ui-icon" src="/static/icons/settings-2.svg" alt="">设置</button>
 </nav>
 
-<div id="notif"></div>
+<div id="notif" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 const DEFAULT_APP_ID = "{{ default_app_id }}";

@@ -18,22 +18,22 @@ const dirtyForms = new Set();
 
 const PAGE_CARDS = [
   { id: 'overview', title: '概览', source: 'mock', preset: 'overview',
-    desc: '综合摘要页；每个来源会显示 LIVE / MOCK / WAIT 等状态。' },
+    desc: '天气、日程与铁路摘要，各来源单独标记数据状态。' },
   { id: 'train', title: '列车', source: 'train',
-    desc: 'Huxley2 为 live；mock 会在板面标注 DEMO。' },
+    desc: '支持 Huxley2 / TransportAPI；演示数据标记为 DEMO。' },
   { id: 'weather', title: '天气', source: 'weather',
     desc: '无 API Key 时使用 Open-Meteo live；有 Key 时使用 OpenWeatherMap。' },
   { id: 'calendar', title: '日程', source: 'calendar',
-    desc: '有 iCal URL 才是 live；未配置时显示 mock 日程。' },
+    desc: '私人 iCal 日历；未配置时显示演示日程。' },
   { id: 'custom', title: '自定义', source: 'custom',
     desc: '完全手工编辑，不属于 live 数据源。' },
 ];
 
 const SOURCE_META = {
-  mock:     { title: '演示 / 轮播', desc: '内置展示和聚合入口；mock 内容不代表 live。' },
+  mock:     { title: '总览 / 轮播', desc: '聚合已配置的数据源；演示内容会单独标记。' },
   train:    { title: '列车数据', desc: 'mock=DEMO；Huxley2/TransportAPI 才是 live。' },
   weather:  { title: '天气数据', desc: '默认 Open-Meteo live；OpenWeatherMap 需要 API Key。' },
-  calendar: { title: '日程数据', desc: 'iCal URL 配置后才是 live；空 URL 为 mock。' },
+  calendar: { title: '日程数据', desc: '读取 iCal 日历；未配置时使用演示数据。' },
   custom:   { title: '自定义文本', desc: '完全手动编辑的一页内容。' },
 };
 
@@ -69,7 +69,7 @@ const OPTION_LABELS = {
   cycle: '低功耗轮播',
   auto: '当前位置',
   manual: '手动城市',
-  mock: 'Mock',
+  mock: '演示数据',
   huxley2: 'Huxley2',
   transportapi: 'TransportAPI',
   metric: '摄氏 / 公制',
@@ -126,7 +126,7 @@ function layoutLabel(layout) {
 }
 
 function slotLabel(sid) {
-  const map = { mock: '演示', train: '列车', weather: '天气', calendar: '日程', custom: '自定义' };
+  const map = { mock: '总览 / 轮播', train: '列车', weather: '天气', calendar: '日程', custom: '自定义' };
   return map[sid] || sid || '-';
 }
 
@@ -184,13 +184,16 @@ function showNotif(message, type = '') {
   el.className = type;
   el.style.display = 'block';
   clearTimeout(notifTimer);
-  notifTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+  notifTimer = setTimeout(() => { el.style.display = 'none'; }, type === 'error' ? 7000 : 4000);
 }
 
 async function runButtonAction(button, loadingText, action) {
-  const oldText = button?.textContent;
+  const oldContent = button?.innerHTML;
+  const oldMinWidth = button?.style.minWidth;
   if (button) {
+    button.style.minWidth = `${button.getBoundingClientRect().width}px`;
     button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
     button.textContent = loadingText;
   }
   try {
@@ -200,7 +203,9 @@ async function runButtonAction(button, loadingText, action) {
   } finally {
     if (button) {
       button.disabled = false;
-      button.textContent = oldText;
+      button.innerHTML = oldContent;
+      button.style.minWidth = oldMinWidth;
+      button.removeAttribute('aria-busy');
     }
   }
 }
@@ -209,14 +214,20 @@ async function runButtonAction(button, loadingText, action) {
 // Navigation
 // ---------------------------------------------------------------------------
 
+const pageScrollPositions = new Map();
 function navigate(pageId) {
+  const content = document.querySelector('.content');
+  pageScrollPositions.set(activePage, content?.scrollTop || 0);
   activePage = pageId;
   document.querySelectorAll('.page').forEach(page => {
     page.classList.toggle('active', page.id === `page-${pageId}`);
   });
   document.querySelectorAll('.nav-item[data-page]').forEach(item => {
     item.classList.toggle('active', item.dataset.page === pageId);
+    if (item.dataset.page === pageId) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
   });
+  if (content) content.scrollTop = pageScrollPositions.get(pageId) || 0;
   if (pageId === 'status') loadDeviceStatus();
 }
 
@@ -235,8 +246,14 @@ async function bootstrap() {
     sources = sourcesData;
     deviceStatus = statusData;
     renderAll();
+    document.getElementById('load-state').hidden = true;
     ensureAutoWeatherLocation();
   } catch (err) {
+    const notice = document.getElementById('load-state');
+    notice.hidden = false;
+    notice.classList.add('error');
+    document.getElementById('load-message').textContent = '控制台数据未能载入，请重新连接设备。';
+    notice.querySelector('button').hidden = false;
     showNotif(err.message || '初始化失败', 'error');
   }
   connectWS();
@@ -356,6 +373,19 @@ function applyStateToUI() {
   renderSlots();
   renderStatus();
   updateAppSwitcher();
+  updatePageSelection();
+}
+
+function updatePageSelection() {
+  PAGE_CARDS.forEach(card => {
+    const el = document.querySelector(`.page-card[data-card="${card.id}"]`);
+    if (!el) return;
+    const current = isCurrentPage(card);
+    el.classList.toggle('is-current', current);
+    const title = el.querySelector('.card-title');
+    title?.querySelector('.current-label')?.remove();
+    if (current) title?.insertAdjacentHTML('beforeend', '<span class="current-label">当前显示</span>');
+  });
 }
 
 function renderDisplaySummary() {
@@ -368,7 +398,7 @@ function renderDisplaySummary() {
   const power = appSettings.animations_enabled === false ? '低功耗静态' : '动画开启';
 
   el.innerHTML = [
-    metricHTML('当前 App', getActiveApp() === 'uk_station' ? '展示看板' : getActiveApp()),
+    metricHTML('运行页面', appLabel(getActiveApp())),
     metricHTML('显示布局', `${layoutLabel(getLayout())} · ${slotText}`),
     metricHTML('轮播预设', `${optionLabel(mockCfg.preset || 'overview')} · ${mockCfg.refresh_interval_sec || 60}s`),
     metricHTML('设备', `${device.orientation === 'portrait' ? '竖屏' : '横屏'} · ${power}`),
@@ -389,8 +419,8 @@ function renderCyclePanel() {
     <div class="panel">
       <div class="card-head">
         <div>
-          <div class="card-title">低功耗轮播</div>
-          <div class="card-subtitle">关闭连续动画，只按间隔切换静态页面。</div>
+          <h3 class="card-title">低功耗轮播</h3>
+          <div class="card-subtitle">静态页面按间隔切换</div>
         </div>
         <div class="btn-row">
           <button class="btn btn-outline btn-sm" data-action="save-cycle">保存设置</button>
@@ -419,10 +449,10 @@ function renderPageCard(card) {
   const current = isCurrentPage(card);
   const form = renderPageForm(card, schema, cfg);
   return `
-    <article class="page-card" data-card="${card.id}">
+    <article class="page-card${current ? ' is-current' : ''}" data-card="${card.id}">
       <div class="card-head">
         <div>
-          <div class="card-title">${esc(card.title)}${current ? ' · 当前显示' : ''}</div>
+          <h3 class="card-title">${esc(card.title)}${current ? '<span class="current-label">当前显示</span>' : ''}</h3>
           <div class="card-subtitle">${esc(card.desc)}</div>
         </div>
         <div class="btn-row">
@@ -437,13 +467,12 @@ function renderPageCard(card) {
 function renderPageForm(card, schema, cfg) {
   if (card.id === 'overview') {
     return `
-      <p class="page-desc" style="margin-bottom:12px;">概览页使用 mock provider 作为入口，但会读取天气、日程、列车缓存；板面会分别标注 LIVE / MOCK / WAIT。</p>
       ${renderField('mock', 'refresh_interval_sec', schema.refresh_interval_sec || {type:'number', default:60}, cfg, 'page')}`;
   }
   if (card.source === 'weather') {
     return renderWeatherForm(card.source, schema, cfg, 'page');
   }
-  const fields = Object.keys(schema);
+  const fields = orderedFields(card.source, schema);
   if (!fields.length) {
     return '<p class="page-desc">这个页面没有可编辑配置。</p>';
   }
@@ -458,14 +487,14 @@ function renderSourceList() {
     const open = openSources.has(sid) ? ' open' : '';
     return `
       <article class="source-card${open}" data-source="${sid}">
-        <div class="card-head source-toggle" data-action="toggle-source" data-source="${sid}">
-          <div>
-            <div class="card-title">${esc(meta.title)}</div>
-            <div class="card-subtitle">${esc(meta.desc)}</div>
-          </div>
-          <span class="chevron">›</span>
-        </div>
-        <div class="source-body">
+        <button class="card-head source-toggle" data-action="toggle-source" data-source="${sid}" aria-expanded="${openSources.has(sid)}" aria-controls="source-body-${sid}">
+          <span>
+            <span class="card-title">${esc(meta.title)}</span>
+            <span class="card-subtitle">${esc(meta.desc)}</span>
+          </span>
+          <img class="ui-icon chevron" src="/static/icons/chevron-right.svg" alt="">
+        </button>
+        <div class="source-body" id="source-body-${sid}">
           ${renderSourceForm(sid, info)}
           <div class="btn-row">
             <button class="btn btn-primary btn-sm" data-action="save-source" data-source="${sid}">保存并刷新</button>
@@ -482,7 +511,7 @@ function renderSourceForm(sid, info) {
   if (sid === 'weather') {
     return renderWeatherForm(sid, schema, cfg, 'source');
   }
-  const fields = Object.keys(schema);
+  const fields = orderedFields(sid, schema);
   if (!fields.length) return '<p class="page-desc">这个数据源没有可编辑配置。</p>';
   return fields.map(key => renderField(sid, key, schema[key], cfg, 'source')).join('');
 }
@@ -494,8 +523,7 @@ function renderWeatherForm(sid, schema, cfg, scope) {
     ? '当前地址无法获取浏览器位置；可填写城市或经纬度。'
     : (mode === 'auto' ? '自动模式会优先使用经纬度。' : '手动模式会使用城市名。');
   return `
-    <div class="panel" style="background:var(--panel-2);border-color:var(--border);margin-bottom:12px;">
-      <div class="card-body">
+    <fieldset class="location-fields" aria-label="天气位置">
         <div class="field-row">
           ${renderField(sid, 'location_mode', schema.location_mode || {type:'select', options:['auto','manual'], default:'auto'}, cfg, scope)}
           ${renderField(sid, 'city', schema.city || {type:'string', default:''}, cfg, scope)}
@@ -505,11 +533,10 @@ function renderWeatherForm(sid, schema, cfg, scope) {
           ${renderField(sid, 'longitude', schema.longitude || {type:'string', default:''}, cfg, scope)}
         </div>
         <div class="btn-row">
-          <button class="btn btn-outline btn-sm" data-action="use-current-location" data-scope="${scope}" data-source="${sid}" ${canLocate ? '' : 'disabled title="定位需要 HTTPS 或本机地址"'}>⌖ 使用当前位置</button>
+          <button class="btn btn-outline btn-sm" data-action="use-current-location" data-scope="${scope}" data-source="${sid}" ${canLocate ? '' : 'disabled title="定位需要 HTTPS 或本机地址"'}><img class="ui-icon" src="/static/icons/locate-fixed.svg" alt="">使用当前位置</button>
           <span class="page-desc">${locationHint}</span>
         </div>
-      </div>
-    </div>
+    </fieldset>
     ${renderField(sid, 'api_key', schema.api_key || {type:'string', secret:true, default:''}, cfg, scope)}
     ${renderField(sid, 'units', schema.units || {type:'select', options:['metric','imperial'], default:'metric'}, cfg, scope)}
   `;
@@ -547,10 +574,14 @@ function renderSettings() {
   const device = getDeviceSettings();
   setInputValue('brightness', device.brightness ?? 1, activeId);
   setInputValue('color_theme', appSettings.color_theme || 'amber', activeId);
-  setInputValue('animations_enabled', String(appSettings.animations_enabled !== false), activeId);
+  const animations = document.getElementById('animations_enabled');
+  if (animations && activeId !== 'animations_enabled') animations.checked = appSettings.animations_enabled !== false;
+  updateAnimationLabel();
   setInputValue('orientation', device.orientation || 'portrait', activeId);
+  updateBrightnessValue();
   document.querySelectorAll('.layout-card').forEach(card => {
     card.classList.toggle('active', card.dataset.layout === getLayout());
+    card.setAttribute('aria-pressed', String(card.dataset.layout === getLayout()));
   });
 }
 
@@ -572,7 +603,7 @@ function renderSlots() {
     ).join('');
     const label = layout === 'dual' ? (i === 0 ? '左侧 / 上方' : '右侧 / 下方')
       : (layout === 'carousel' ? `轮播槽 ${i + 1}` : '显示页面');
-    return `<div class="slot-box"><div class="field"><label>${label}</label><select id="slot_${i}">${options}</select></div></div>`;
+    return `<div class="slot-box"><div class="field"><label for="slot_${i}">${label}</label><select id="slot_${i}">${options}</select></div></div>`;
   }).join('');
 }
 
@@ -587,16 +618,16 @@ function renderStatus() {
   const power = appSettings.animations_enabled === false ? '低功耗' : '动画开启';
 
   el.innerHTML = [
-    statusHTML('WebSocket', wsConnected ? '已连接' : '已断开', wsConnected ? 'status-good' : 'status-bad'),
+    statusHTML('控制台连接', wsConnected ? '已连接' : '已断开', wsConnected ? 'status-good' : 'status-bad'),
     statusHTML('主机', deviceStatus.hostname || '-', ''),
     statusHTML('设备类型', deviceStatus.is_pi ? 'Raspberry Pi' : 'Mac / 本地预览', ''),
-    statusHTML('当前 App', getActiveApp(), ''),
+    statusHTML('运行页面', appLabel(getActiveApp()), ''),
     statusHTML('布局 / 槽位', `${layoutLabel(getLayout())} · ${(getSlots().map(slotLabel).join(' / ') || '-')}`, ''),
     statusHTML('功耗模式', power, appSettings.animations_enabled === false ? 'status-good' : 'status-warn'),
     statusHTML('方向', device.orientation === 'portrait' ? '竖屏' : '横屏', ''),
     statusHTML('亮度', `${Math.round((device.brightness ?? 1) * 100)}%`, ''),
     statusHTML('温度', temp, deviceStatus.temp_c && deviceStatus.temp_c > 70 ? 'status-warn' : ''),
-    statusHTML('Throttled', throttled, throttled === '0x0' ? 'status-good' : (throttled === '本地不可用' ? '' : 'status-warn')),
+    statusHTML('降频状态', throttled === '0x0' ? '正常 · 0x0' : throttled, throttled === '0x0' ? 'status-good' : (throttled === '本地不可用' ? '' : 'status-warn')),
     statusHTML('状态更新时间', updated, ''),
   ].join('');
 }
@@ -609,6 +640,7 @@ function updateAppSwitcher() {
   const current = getActiveApp();
   document.querySelectorAll('.app-switch-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.app === current);
+    btn.setAttribute('aria-pressed', String(btn.dataset.app === current));
   });
 }
 
@@ -625,10 +657,10 @@ function renderField(sid, key, def, cfg, scope) {
   if (def.type === 'rows') {
     return `
       <div class="field">
-        <label>${esc(label)}</label>
+        <span class="field-legend">${esc(label)}</span>
         ${renderRowsEditor(scope, sid, value || [])}
         <div class="btn-row" style="margin-top:8px;">
-          <button class="btn btn-ghost btn-sm" data-action="add-row" data-scope="${scope}" data-source="${sid}">＋ 添加一行</button>
+          <button class="btn btn-outline btn-sm" data-action="add-row" data-scope="${scope}" data-source="${sid}">添加一行</button>
         </div>
       </div>`;
   }
@@ -642,7 +674,7 @@ function renderField(sid, key, def, cfg, scope) {
         <span>${esc(optionLabel(option))}</span>
       </label>`;
     }).join('');
-    return `<div class="field"><label>${esc(label)}</label><div class="check-grid">${boxes}</div></div>`;
+    return `<div class="field"><span class="field-legend" id="${id}_label">${esc(label)}</span><div class="check-grid" role="group" aria-labelledby="${id}_label">${boxes}</div></div>`;
   }
 
   if (def.type === 'select') {
@@ -650,7 +682,11 @@ function renderField(sid, key, def, cfg, scope) {
       const optValue = optionValue(option);
       return `<option value="${esc(optValue)}" ${String(value) === String(optValue) ? 'selected' : ''}>${esc(optionLabel(option))}</option>`;
     }).join('');
-    return `<div class="field"><label for="${id}">${esc(label)}</label><select id="${id}" data-form-key="${keyName}">${options}</select></div>`;
+    const select = `<select id="${id}" data-form-key="${keyName}">${options}</select>`;
+    const field = key.endsWith('_color')
+      ? `<div class="color-field"><span class="color-sample" aria-hidden="true" style="background:${colorSample(value)}"></span>${select}</div>`
+      : select;
+    return `<div class="field"><label for="${id}">${esc(label)}</label>${field}</div>`;
   }
 
   const type = def.secret ? 'password' : (def.type === 'number' ? 'number' : 'text');
@@ -659,7 +695,7 @@ function renderField(sid, key, def, cfg, scope) {
 
 function renderRowsEditor(scope, sid, rows) {
   const items = (rows || []).map(row => renderRowItem(row)).join('');
-  return `<div class="rows-editor" data-scope="${scope}" data-source="${sid}">${items}</div>`;
+  return `<div class="rows-editor" data-scope="${scope}" data-source="${sid}">${items || '<p class="rows-empty">暂无内容行</p>'}</div>`;
 }
 
 function renderRowItem(row) {
@@ -667,16 +703,18 @@ function renderRowItem(row) {
   const right = typeof row === 'string' ? '' : (row.right || '');
   return `
     <div class="row-editor-item">
-      <input type="text" class="row-left" value="${esc(left)}" placeholder="左侧文字">
-      <input type="text" class="row-right" value="${esc(right)}" placeholder="右侧">
-      <button class="btn btn-ghost del" data-action="delete-row">×</button>
+      <input type="text" class="row-left" value="${esc(left)}" placeholder="左侧文字" aria-label="左侧文字">
+      <input type="text" class="row-right" value="${esc(right)}" placeholder="右侧" aria-label="右侧文字">
+      <button class="btn btn-ghost del" data-action="delete-row" aria-label="删除此行" title="删除此行">×</button>
     </div>`;
 }
 
 function addRow(scope, sid) {
   const editor = document.querySelector(`.rows-editor[data-scope="${scope}"][data-source="${sid}"]`);
   if (!editor) return;
+  editor.querySelector('.rows-empty')?.remove();
   editor.insertAdjacentHTML('beforeend', renderRowItem({left: '', right: ''}));
+  editor.lastElementChild?.querySelector('input')?.focus();
   dirtyForms.add(formKey(scope, sid));
 }
 
@@ -720,6 +758,7 @@ function collectRows(editor) {
 // ---------------------------------------------------------------------------
 
 function isCurrentPage(card) {
+  if (getActiveApp() !== 'uk_station') return false;
   const slots = getSlots();
   if (card.id === 'overview') {
     return getLayout() === 'single' && slots[0] === 'mock' && (sources.mock?.config?.preset || 'overview') === 'overview';
@@ -863,7 +902,7 @@ function scheduleSettings() {
 async function pushSettings() {
   const appSettings = {
     color_theme: document.getElementById('color_theme')?.value || 'amber',
-    animations_enabled: document.getElementById('animations_enabled')?.value === 'true',
+    animations_enabled: document.getElementById('animations_enabled')?.checked === true,
   };
   const deviceSettings = {
     brightness: Number(document.getElementById('brightness')?.value || 1),
@@ -899,8 +938,12 @@ document.addEventListener('click', evt => {
 
   const layoutCard = evt.target.closest('.layout-card[data-layout]');
   if (layoutCard) {
-    document.querySelectorAll('.layout-card').forEach(card => card.classList.remove('active'));
+    document.querySelectorAll('.layout-card').forEach(card => {
+      card.classList.remove('active');
+      card.setAttribute('aria-pressed', 'false');
+    });
     layoutCard.classList.add('active');
+    layoutCard.setAttribute('aria-pressed', 'true');
     renderSlots();
     return;
   }
@@ -914,6 +957,7 @@ document.addEventListener('click', evt => {
     if (openSources.has(sid)) openSources.delete(sid);
     else openSources.add(sid);
     button.closest('.source-card')?.classList.toggle('open');
+    button.setAttribute('aria-expanded', String(openSources.has(sid)));
     return;
   }
 
@@ -931,6 +975,7 @@ document.addEventListener('click', evt => {
   }
 
   const runners = {
+    'retry-load': () => location.reload(),
     'refresh-all': () => Promise.all([loadDeviceStatus(), loadSources(true)]),
     'reload-sources': () => loadSources(true),
     'refresh-device-status': () => loadDeviceStatus(),
@@ -957,6 +1002,7 @@ document.addEventListener('input', evt => {
     dirtyForms.add(formKey(editor.dataset.scope, editor.dataset.source));
   }
   if (['brightness'].includes(evt.target.id)) scheduleSettings();
+  if (evt.target.id === 'brightness') updateBrightnessValue();
 });
 
 function maybeSwitchWeatherToManual(target) {
@@ -973,7 +1019,10 @@ function maybeSwitchWeatherToManual(target) {
 
 document.addEventListener('change', evt => {
   markDirtyFromElement(evt.target);
+  const swatch = evt.target.closest('.color-field')?.querySelector('.color-sample');
+  if (swatch) swatch.style.background = colorSample(evt.target.value);
   if (['color_theme', 'animations_enabled', 'orientation'].includes(evt.target.id)) {
+    updateAnimationLabel();
     scheduleSettings();
   }
 });
@@ -981,6 +1030,36 @@ document.addEventListener('change', evt => {
 // ---------------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------------
+
+function orderedFields(sid, schema) {
+  const preferred = {
+    train: ['station_crs', 'destination_crs', 'data_source', 'huxley2_base', 'api_key'],
+    custom: ['title', 'title_color', 'subtitle', 'rows', 'header_left', 'header_right',
+             'status_text', 'status_color', 'footer', 'ticker'],
+    calendar: ['ical_url', 'lookahead_days'],
+  }[sid] || [];
+  return [...preferred.filter(key => key in schema), ...Object.keys(schema).filter(key => !preferred.includes(key))];
+}
+
+function appLabel(appId) {
+  return {uk_station: '展示看板', system_status: '系统状态'}[appId] || appId;
+}
+
+function colorSample(value) {
+  return {amber: '#ff9500', green: '#50dc50', white: '#dcdcdc', orange: '#ffa01e', red: '#dc3232'}[value] || '#ff9500';
+}
+
+function updateBrightnessValue() {
+  const slider = document.getElementById('brightness');
+  const output = document.getElementById('brightness-value');
+  if (slider && output) output.textContent = `${Math.round(Number(slider.value) * 100)}%`;
+}
+
+function updateAnimationLabel() {
+  const input = document.getElementById('animations_enabled');
+  const label = document.getElementById('animation-state');
+  if (input && label) label.textContent = input.checked ? '开启连续动画' : '关闭（低功耗）';
+}
 
 function esc(value) {
   return String(value ?? '')

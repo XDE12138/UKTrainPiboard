@@ -1,0 +1,77 @@
+{
+  "date": "2026-11-11",
+  "before_sha256": "6e0faa26d742fe2e2127db289fab0b4b606246f9fbb089e3b83c5844f17ea761",
+  "after_sha256": "5c6d79f581932b6b9857fa353fee672a0f59874f1ee4551a7f3be6d7a2df8b05",
+  "changed": [
+    {
+      "char": "0",
+      "sizes": [
+        "LARGE",
+        "XLARGE"
+      ],
+      "reason": "7×9：加入斜线，与字母 O 区分，并与小字号的 0 保持一致。"
+    },
+    {
+      "char": "N",
+      "sizes": [
+        "SMALL",
+        "MEDIUM",
+        "LARGE",
+        "XLARGE"
+      ],
+      "reason": "5×7 / 7×9：让斜笔贯穿字高，避免笔画集中在上半部。"
+    },
+    {
+      "char": "S",
+      "sizes": [
+        "LARGE",
+        "XLARGE"
+      ],
+      "reason": "7×9：补上断开的中段，统一上下弧线，保留 5×7 字形。"
+    },
+    {
+      "char": "V",
+      "sizes": [
+        "LARGE",
+        "XLARGE"
+      ],
+      "reason": "7×9：交点落在最后一行，去掉像 Y 的竖直尾巴。"
+    },
+    {
+      "char": "W",
+      "sizes": [
+        "SMALL",
+        "MEDIUM",
+        "LARGE",
+        "XLARGE"
+      ],
+      "reason": "5×7 / 7×9：底部收成两个谷点，避免折回两侧竖笔。"
+    }
+  ],
+  "spacing": {
+    "before_tracking": {
+      "SMALL": 1,
+      "MEDIUM": 1,
+      "LARGE": 2,
+      "XLARGE": 3
+    },
+    "after_tracking": {
+      "SMALL": 2,
+      "MEDIUM": 1,
+      "LARGE": 2,
+      "XLARGE": 3
+    },
+    "before_cjk_gap": {
+      "SMALL": 1,
+      "MEDIUM": 1,
+      "LARGE": 2,
+      "XLARGE": 3
+    },
+    "after_cjk_gap": {
+      "SMALL": 3,
+      "MEDIUM": 3,
+      "LARGE": 3,
+      "XLARGE": 3
+    }
+  }
+}

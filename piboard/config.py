@@ -24,17 +24,17 @@ BG_COLOR = (8, 8, 8)   # #080808，极深黑
 COLORS = {
     "amber":  (255, 149,   0),   # 主色，琥珀色
     "green":  ( 80, 220,  80),   # 状态正常
-    "red":    (220,  50,  50),   # 告警/延误
+    "red":    (232,  72,  72),   # 告警/延误，细点阵仍保持可辨识度
     "orange": (255, 160,  30),   # 次要信息
     "white":  (220, 220, 220),   # 高亮白
-    "dim":    (160, 100,   5),   # 暗色辅助文字（约 62% amber，匹配参考图可读 dim）
+    "dim":    (176, 120,  35),   # 次要文字，在暗底上保留阅读对比
 }
 
 # 颜色主题变体（color_theme 设置生效时，主色 amber 映射到以下颜色）
 COLOR_THEMES = {
     "amber": COLORS,
-    "green": {**COLORS, "amber": ( 80, 220,  80)},
-    "white": {**COLORS, "amber": (220, 220, 220)},
+    "green": {**COLORS, "amber": ( 80, 220,  80), "dim": (105, 155, 105)},
+    "white": {**COLORS, "amber": (220, 220, 220), "dim": (148, 148, 148)},
 }
 
 # 点阵字体点间距（像素），各尺寸
@@ -58,7 +58,7 @@ DOT_SPACING = {
 #
 #   大小写约束：
 #     LARGE / XLARGE 当前只有 7×9 大写字母 + 数字原生字模；
-#     小写字母会触发 5×7→7×9 拉伸 fallback，导致字形失真。
+#     小写字母以 5×7 字模居中放入 7×9 单元，不做拉伸。
 #     规则：LARGE 和 XLARGE 必须使用全大写文本，直到 _FONT_7X9 补充小写定义。
 #
 #   Descender（下伸部字母）：
@@ -67,13 +67,12 @@ DOT_SPACING = {
 #     后续若需真实 descender，应将小写字模扩展至 5×9（增加 2 行 descender zone）。
 #
 #   Baseline：
-#     当前无 baseline 概念，所有字符以顶边对齐渲染。
-#     字符底边 = cap height 底边 = 当前事实 baseline。
+#     混合字符按同一行的最大高度垂直居中，避免中英文顶边错位。
 #
 # 【目标规则 / Target Typography Rules】
 #
 #   - 引入 baseline_row 概念：5×7 中 row 5 为 baseline，row 6 = descender zone
-#   - LARGE/XLARGE 补充 a-z 7×9 字模，消除 fallback 拉伸
+#   - LARGE/XLARGE 可补充原生 a-z 7×9 字模（当前居中复用 5×7）
 #   - line-height 使用下方 LINE_HEIGHTS 常量，不允许各 renderer 自行硬编码
 #   - 数字必须等宽（当前已满足）
 #   - 常用符号（: / - . %）在同档字号内宽度统一（当前已满足）
@@ -96,10 +95,6 @@ TRANSITION_DURATION = 500  # 板面切换动画时长，毫秒
 # Web 服务设置
 WEB_HOST = "0.0.0.0"
 WEB_PORT = 8080
-
-# Provider 注册表（在 main.py 中填充，这里只留空列表作为默认）
-# 使用字符串延迟导入，避免循环依赖
-REGISTERED_PROVIDER_CLASSES = []
 
 # 数据目录
 import os

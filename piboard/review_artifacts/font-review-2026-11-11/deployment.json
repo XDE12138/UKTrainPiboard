@@ -1,0 +1,14 @@
+{
+  "font_sha256": "5c6d79f581932b6b9857fa353fee672a0f59874f1ee4551a7f3be6d7a2df8b05",
+  "deployed_at_utc": "2026-11-11T16:33:08Z",
+  "base_version": "v0.1.1",
+  "base_commit": "c636e878eda4",
+  "source": "approved-font-overlay",
+  "service_active": true,
+  "service_enabled": true,
+  "private_configuration_preserved": true,
+  "font_tests_passed": 7,
+  "visual_tests_passed": 9,
+  "temp_c": 47.2,
+  "throttled": "0x0"
+}

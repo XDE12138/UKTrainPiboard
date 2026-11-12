@@ -34,6 +34,8 @@ class DualLayout(BaseLayout):
         ]
         self._last_ids = ["", ""]
         self._last_tickers = ["", ""]
+        self._last_rows_counts = [-1, -1]
+        self._last_geometries = [None, None]
         self._ticker_page_starts = [0, 0]
         self._panel_widths = [0, 0]
         self._work_surfs = [None, None]
@@ -74,14 +76,18 @@ class DualLayout(BaseLayout):
                 self._work_surfs[i] = pygame.Surface((panel_w, panel_h))
 
             ticker_text = content.ticker or ""
+            rows_h = self._renderer.get_rows_area_height(panel_h, bool(content.ticker), content, panel_w)
+            row_h = self._renderer.get_row_height(panel_h, content, panel_w)
+            geometry = (panel_w, panel_h, rows_h, row_h)
             if (content.provider_id != self._last_ids[i] or
-                    ticker_text != self._last_tickers[i]):
+                    ticker_text != self._last_tickers[i]
+                    or len(content.rows) != self._last_rows_counts[i]
+                    or geometry != self._last_geometries[i]):
                 self._last_ids[i] = content.provider_id
                 self._last_tickers[i] = ticker_text
+                self._last_rows_counts[i] = len(content.rows)
+                self._last_geometries[i] = geometry
                 self._ticker_page_starts[i] = pygame.time.get_ticks()
-                rows_h = self._renderer.get_rows_area_height(
-                    panel_h, bool(content.ticker), content, panel_w)
-                row_h = self._renderer.get_row_height(panel_h, content, panel_w)
                 anim.set_content(content, area_h=rows_h, row_h=row_h)
 
             params = anim.update()
@@ -105,6 +111,8 @@ class DualLayout(BaseLayout):
     def on_providers_changed(self, providers: List[BaseProvider]):
         self._last_ids = ["", ""]
         self._last_tickers = ["", ""]
+        self._last_rows_counts = [-1, -1]
+        self._last_geometries = [None, None]
         self._ticker_page_starts = [0, 0]
         self._work_surfs = [None, None]
         for anim in self._anims:
