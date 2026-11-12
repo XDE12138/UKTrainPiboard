@@ -59,7 +59,7 @@ class CalendarToUKBinding(BaseBinding):
             ticker=self._ticker(sorted_events, today) if sorted_events else None,
             template="info",
             provider_id="calendar",
-            expires_at=None,
+            expires_at=raw.fetched_at + 300,
         )
 
     # ------------------------------------------------------------------

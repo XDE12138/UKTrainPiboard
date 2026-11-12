@@ -26,6 +26,7 @@ fi
 # 确定安装目录
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
 SERVICE_FILE="/etc/systemd/system/piboard.service"
+INSTALL_USER="${SUDO_USER:-$(id -un)}"
 
 # 创建 systemd 服务
 sudo bash -c "cat > $SERVICE_FILE" << EOF
@@ -38,7 +39,7 @@ ExecStart=/usr/bin/python3 ${INSTALL_DIR}/main.py
 WorkingDirectory=${INSTALL_DIR}
 Restart=always
 RestartSec=5
-User=pi
+User=${INSTALL_USER}
 Environment=SDL_VIDEODRIVER=kmsdrm
 Environment=SDL_AUDIODRIVER=dummy
 
@@ -52,4 +53,4 @@ echo ""
 echo "=== Installation complete ==="
 echo "Run: sudo systemctl start piboard"
 echo "Logs: sudo journalctl -u piboard -f"
-echo "Web:  http://$(hostname -I | awk '{print $1}'):5000"
+echo "Web:  http://$(hostname -I | awk '{print $1}'):8080"

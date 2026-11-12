@@ -92,12 +92,7 @@ def _migrate_v0_to_v1(saved: Dict[str, Any]) -> Dict[str, Any]:
 
     # Source configs（原 providers_config）
     if "providers_config" in saved:
-        # 深合并：保留已有默认值，用 saved 值覆盖
-        for sid, cfg in saved["providers_config"].items():
-            if sid in new["source_configs"]:
-                new["source_configs"][sid].update(cfg)
-            else:
-                new["source_configs"][sid] = dict(cfg)
+        new["source_configs"] = copy.deepcopy(saved["providers_config"])
 
     # Settings split
     old_settings = saved.get("settings", {})
@@ -130,6 +125,8 @@ def _normalize_source_configs(source_configs: Dict[str, Any]):
             continue
         merged = copy.deepcopy(default_cfg)
         merged.update(current)
+        if sid == "weather" and "location_mode" not in current:
+            merged["location_mode"] = "manual" if current.get("city") else "auto"
         source_configs[sid] = merged
 
     weather = source_configs.get("weather", {})
@@ -366,7 +363,7 @@ class AppState:
                 data = self.get_all()
                 # 不持久化 dirty 标志
                 data.pop("dirty", None)
-                dir_path = os.path.dirname(path)
+                dir_path = os.path.dirname(path) or "."
                 tmp_path = path + ".tmp"
                 os.makedirs(dir_path, exist_ok=True)
                 with open(tmp_path, "w", encoding="utf-8") as f:
@@ -402,39 +399,61 @@ class AppState:
                 return
 
             with self._rlock:
+                restored = copy.deepcopy(self._state)
                 # 只恢复已知顶层键
                 for key in ("current_app", "apps", "source_configs"):
                     if key in migrated:
-                        self._state[key] = migrated[key]
+                        restored[key] = migrated[key]
+                if not isinstance(restored["apps"], dict):
+                    raise ValueError("apps must be an object")
+                if not isinstance(restored["source_configs"], dict):
+                    raise ValueError("source_configs must be an object")
                 # device_settings 单独处理：先 sanitize 再合并到默认值之上，
                 # 保证非法 key / 非法 orientation 不进内存，且默认值不因过滤而丢失。
                 if "device_settings" in migrated:
                     sanitized = self._sanitize_device_settings(migrated["device_settings"])
-                    self._state["device_settings"].update(sanitized)
-                self._state["schema_version"] = 1
-                self._state["dirty"] = True
+                    restored["device_settings"].update(sanitized)
+                restored["schema_version"] = 1
+                restored["dirty"] = True
 
                 # 升级兼容：补齐旧版本 state 中缺失的 app 条目（以默认值填入）。
                 # 保证 system_status 等新 app 在旧 state.json 升级后自动可用，
                 # 同时不覆盖已有 app 的用户配置。
                 defaults = _default_state()
                 for app_id, default_cfg in defaults["apps"].items():
-                    if app_id not in self._state["apps"]:
+                    if app_id not in restored["apps"]:
                         log.info(
                             f"State upgrade: adding missing app '{app_id}' with defaults"
                         )
-                        self._state["apps"][app_id] = copy.deepcopy(default_cfg)
+                        restored["apps"][app_id] = copy.deepcopy(default_cfg)
 
-                _normalize_source_configs(self._state["source_configs"])
+                for app_id, default_cfg in defaults["apps"].items():
+                    cfg = restored["apps"][app_id]
+                    if not isinstance(cfg, dict):
+                        raise ValueError(f"Invalid app config: {app_id}")
+                    merged = copy.deepcopy(default_cfg)
+                    merged.update(cfg)
+                    if (not isinstance(merged["layout"], str)
+                            or not isinstance(merged["slots"], list)
+                            or not all(isinstance(s, str) for s in merged["slots"])
+                            or not isinstance(merged["app_settings"], dict)):
+                        raise ValueError(f"Invalid app state: {app_id}")
+                    merged["app_settings"] = {**default_cfg["app_settings"],
+                                              **merged["app_settings"]}
+                    restored["apps"][app_id] = merged
+
+                _normalize_source_configs(restored["source_configs"])
 
                 # 校验 current_app：对照 catalog 的 KNOWN_APP_IDS 校验，而不是
-                # self._state["apps"].keys()，避免持久化中的 unknown app 条目被误认为合法。
-                if self._state["current_app"] not in KNOWN_APP_IDS:
+                # restored["apps"].keys()，避免持久化中的 unknown app 条目被误认为合法。
+                if restored["current_app"] not in KNOWN_APP_IDS:
                     log.warning(
-                        f"Loaded current_app='{self._state['current_app']}' is not in "
+                        f"Loaded current_app='{restored['current_app']}' is not in "
                         f"known apps {KNOWN_APP_IDS}; falling back to '{DEFAULT_APP_ID}'"
                     )
-                    self._state["current_app"] = DEFAULT_APP_ID
+                    restored["current_app"] = DEFAULT_APP_ID
+
+                self._state = restored
 
             log.info(f"State loaded from {path} (schema_version={version or 'v0→v1'})")
         except Exception as e:

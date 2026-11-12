@@ -77,7 +77,7 @@ sed \
 echo "Installing service file and starting ${SERVICE_NAME}"
 rsync -az "${SERVICE_TMP}" "${PI_HOST}:/tmp/piboard.service"
 ssh "${PI_HOST}" "\
-  sudo cp /tmp/piboard.service /etc/systemd/system/piboard.service && \
+  sudo cp /tmp/piboard.service /etc/systemd/system/'${SERVICE_NAME}' && \
   rm -f /tmp/piboard.service && \
   sudo systemctl daemon-reload && \
   sudo systemctl start '${SERVICE_NAME}' && \

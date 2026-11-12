@@ -35,8 +35,7 @@ Settings 变化过滤说明：
 - device_settings（brightness / orientation）变化 → 只更新 dirty flag，不重建 layout
 
 orientation 说明：
-- 本轮不从 state 读取 orientation 影响启动尺寸。
-- TODO(future-task): 在设备设置 Task 中完成 orientation 与启动尺寸的绑定。
+- main.setup_pygame() 在启动时读取持久化 orientation；Host 不在运行中重建窗口。
 """
 import pygame
 import logging

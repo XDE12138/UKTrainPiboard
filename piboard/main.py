@@ -125,9 +125,9 @@ def start_web_server(providers, fetcher):
     from web.server import create_app
     from config import WEB_HOST, WEB_PORT
     app = create_app(providers, fetcher)
-    # 单线程 Flask，避免 SDL 和多线程冲突
+    # WebSocket 长连接需要独立线程；pygame 仍只在主线程执行。
     app.run(host=WEB_HOST, port=WEB_PORT,
-            threaded=False, use_reloader=False)
+            threaded=True, use_reloader=False)
 
 
 def main():

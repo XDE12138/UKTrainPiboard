@@ -1,6 +1,6 @@
 """
 Flask + flask-sock Web 控制台服务器。
-单线程模式，与 pygame 主线程通过 state.py 通信。
+各请求独立线程，与 pygame 主线程通过 state.py 通信。
 
 Task 7: 迁移到 app/source/device-centric 控制语义。
 
@@ -253,7 +253,7 @@ def create_app(providers: Dict[str, BaseProvider],
             # 初始推送完整 canonical 状态
             _send_ws(ws, {"type": "state", "data": app_state.get_all()})
             while True:
-                msg = ws.receive(timeout=30)
+                msg = ws.receive()
                 if msg is None:
                     break
                 try:

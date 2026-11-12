@@ -312,7 +312,7 @@ class MockProvider(BaseProvider):
             "detail": detail,
             "summary": f"{title} {desc}",
             "right": today or state,
-            "fetched_at": self._content_fetched_at(content),
+            "fetched_at": self._content_fetched_at(content, self._linked_weather_provider),
         }
 
     def _overview_calendar(self, now: _dt.datetime) -> dict:
@@ -393,7 +393,7 @@ class MockProvider(BaseProvider):
             "summary": today_summary or str(getattr(content, "subtitle", "") or "CALENDAR"),
             "right": next_time if has_next else state,
             "detail": "CALENDAR PAGE",
-            "fetched_at": self._content_fetched_at(content),
+            "fetched_at": self._content_fetched_at(content, self._linked_calendar_provider),
         }
 
     def _overview_rail(self) -> dict:
@@ -416,9 +416,14 @@ class MockProvider(BaseProvider):
                 "right": "CACHE",
                 "detail": "LIVE DATA NOT READY",
             }
+        now = _dt.datetime.now()
+        state, color = self._content_freshness(
+            content, self._linked_train_provider, now)
+        if content.status_text == "RETRYING":
+            state, color = "WAIT", "orange"
         return {
-            "state": "LIVE",
-            "state_color": "green",
+            "state": state,
+            "state_color": color,
             "summary": str(getattr(content, "title", "") or data_source).upper(),
             "right": str(getattr(content, "status_text", "") or "LIVE").upper(),
             "detail": str(getattr(content, "page_label", "") or "LIVE TRAIN DATA").upper(),
@@ -611,13 +616,14 @@ class MockProvider(BaseProvider):
         expires_at = getattr(content, "expires_at", None)
         if expires_at is not None and expires_at < now.timestamp():
             return "STALE", "orange"
-        return self._freshness(self._content_fetched_at(content), provider, now)
+        return self._freshness(self._content_fetched_at(content, provider), provider, now)
 
     @staticmethod
-    def _content_fetched_at(content: BoardContent) -> float:
+    def _content_fetched_at(content: BoardContent, provider=None) -> float:
         expires_at = getattr(content, "expires_at", None)
         if expires_at is not None:
-            return float(expires_at) - 600.0
+            interval = float(getattr(provider, "default_refresh_interval", 600))
+            return float(expires_at) - interval
         return _time.time()
 
     @staticmethod
@@ -669,10 +675,10 @@ class MockProvider(BaseProvider):
                 BoardRow("UPDATED",   updated,
                          left_color="dim", right_color="dim"),
             ],
-            footer="Great Northern",
+            footer="Rail demo data (mock)",
             footer_color="dim",
-            status_text="ON TIME",
-            status_color="green",
+            status_text="DEMO",
+            status_color="orange",
             ticker="Great Northern service to Kings Lynn. Platform 7. "
                    f"Formed of 8 coaches. Updated {updated}.",
             carriage_hint="8",
