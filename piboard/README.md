@@ -1,8 +1,14 @@
-# PiBoard
+# PiBoard | 技术指南 / Technical Guide
 
 树莓派 Zero 2W 上的轻量级个人信息显示系统。
 
 将任意内容（列车时刻、天气、日程、自定义文字）以**英国火车站 LED 点阵报站大屏**的视觉风格呈现在屏幕上，并通过局域网 Web 控制台实时管理。
+
+PiBoard is a lightweight information display for the Raspberry Pi Zero 2W, inspired by British railway LED departure boards. It shows rail updates, weather, calendar events and custom text, managed through a web console on your local network.
+
+本文为中文详细技术指南；中英双语项目介绍、运行与部署说明见 [项目首页 / Bilingual README](../README.md)。
+
+This detailed technical guide is in Chinese. For a bilingual introduction, setup instructions and deployment notes, see the [main README](../README.md#english).
 
 ---
 
