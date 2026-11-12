@@ -23,12 +23,14 @@ from typing import Dict
 
 from flask import Flask, jsonify, request, render_template
 from flask_sock import Sock
+from werkzeug.exceptions import BadRequest
 
 from state import app_state
 from providers.base import BaseProvider
 from data.fetcher import DataFetcher
 from apps.catalog import APP_CATALOG, KNOWN_APP_IDS, DEFAULT_APP_ID
 from version import runtime_version
+from web.validation import http_write, ws_write
 
 log = logging.getLogger(__name__)
 
@@ -51,6 +53,20 @@ def create_app(providers: Dict[str, BaseProvider],
                 static_folder="static")
     app.config["SOCK_SERVER_OPTIONS"] = {"ping_interval": 25}
     sock = Sock(app)
+
+    @app.errorhandler(BadRequest)
+    def invalid_json(_error):
+        return jsonify({"error": "Invalid JSON request"}), 400
+
+    @app.before_request
+    def validate_write():
+        if (request.method == "POST" and request.endpoint
+                and request.endpoint not in ("api_source_refresh", "api_provider_refresh")):
+            try:
+                http_write(request.endpoint, request.get_json(force=True),
+                           request.view_args or {}, providers)
+            except ValueError as exc:
+                return jsonify({"error": str(exc)}), 400
 
     # ------------------------------------------------------------------
     # 辅助：构建 sources 响应体（/api/sources 和 /api/providers 共用）
@@ -259,6 +275,8 @@ def create_app(providers: Dict[str, BaseProvider],
                 try:
                     data = json.loads(msg)
                     _handle_ws_message(data, providers, fetcher, ws)
+                except ValueError as e:
+                    _send_ws(ws, {"type": "error", "error": str(e)})
                 except Exception as e:
                     log.warning(f"WS message error: {e}")
         except Exception:
@@ -290,6 +308,7 @@ def _wait_for_refresh(source_id: str, future):
 # ------------------------------------------------------------------
 
 def _handle_ws_message(data: dict, providers, fetcher, ws):
+    ws_write(data, providers)
     action = data.get("action")
 
     # --- Canonical actions ---
