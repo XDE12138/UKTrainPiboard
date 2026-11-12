@@ -2,7 +2,7 @@
 
 PiBoard 是运行在 Raspberry Pi Zero 2W 上的个人信息显示系统，用 Python、pygame 和 SDL2 `kmsdrm` 直接渲染英国火车站 LED 点阵风格看板。
 
-当前版本：`v0.1.1`，真实数据与发布验收修正版。
+当前源码版本：`v0.1.2-rc.1`，显示与运行修复候选版。最近正式标签仍为 `v0.1.1`；候选版尚未完成整合后的 Pi 验收，不等于已发布正式版。
 
 ![PiBoard overview demo](piboard-deploy-final-overview.png)
 
@@ -31,8 +31,10 @@ python3 main.py --window
 最小 smoke：
 
 ```bash
-/opt/anaconda3/bin/python3 -m compileall -q piboard
-/opt/anaconda3/bin/python3 tests/smoke_v0_1_1.py
+python3 -m compileall -q piboard
+python3 tests/smoke_v0_1_1.py
+python3 tests/smoke_visual.py
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
 ## 部署到 Pi
@@ -60,16 +62,19 @@ Environment=SDL_AUDIODRIVER=dummy
 
 ## 数据真实性边界
 
-| 页面 | v0.1.1 状态 |
+| 页面 | 数据边界 |
 |---|---|
 | Overview | 混合摘要；每个来源在板面/文档中按 LIVE / MOCK / WAIT 标注 |
 | Train | 默认 mock/demo；配置 `data_source=huxley2` 后走 Huxley2 兼容 live endpoint，BHM 已在 post-v0.1.1 hotfix 中验证 |
 | Weather | Open-Meteo live 已本地验证；OpenWeatherMap 需要用户自己的 API Key |
-| Calendar | 默认 mock/demo；iCal live 需要用户提供非公开订阅 URL，本次不宣称 live 已验收 |
+| Calendar | 默认 mock/demo；配置用户自己的 iCal 订阅后使用该日历；没有公开测试源，不宣称通用 live 验收完成 |
 | Custom | 手工内容，不是 live 数据 |
 
 ## 验收记录
 
+- `v0.1.2-rc.1` 整理及待验收项：[docs/v0.1.2-rc.1.md](docs/v0.1.2-rc.1.md)
+- 点阵字体前后对比：[字体审查记录](docs/font-review-2026-11-11.md)；下载仓库后可直接打开 [交互对比页](piboard/review_artifacts/font-review-2026-11-11/index.html)。GitHub 文件页本身不执行该 HTML。
+- [视觉与交互审查](docs/visual-review-2026-11-11.md) / [运行审计与遗留问题](docs/project-audit-2026-11-10.md)
 - `v0.1-demo` 历史记录：[docs/v0.1-demo.md](docs/v0.1-demo.md)
 - `v0.1.1` 发布验收记录：[docs/v0.1.1.md](docs/v0.1.1.md)
 
@@ -79,9 +84,11 @@ Environment=SDL_AUDIODRIVER=dummy
 
 ## 当前限制
 
-- v0.1.1 不新增页面和数据源，只收口现有演示与发布验收。
-- Calendar live 需要用户提供安全的公开测试 iCal；默认配置是 mock。
+- 本候选版不新增页面和数据源；Pi 当前仅验证了显示与字体补丁，整合后的运行修复尚待硬件复测。
+- Calendar 默认配置是 mock；私人订阅不会随源码同步。重复事件和跨日事件尚未完整支持。
 - Train live 依赖公开 Huxley2 兼容服务可用性；当前默认 endpoint 已切到短期替代服务，并保留原 Azure endpoint 作为 fallback。
+- 控制台没有登录保护，只适用于受信任的局域网，不应直接暴露到公网。浏览器定位需要安全访问环境；普通局域网 HTTP 可改用手动城市。
+- 写入 API 的统一输入校验、并发设置冲突及 OpenWeatherMap 概览兼容性仍有已知缺口，详见审计记录。
 - 运行时横竖屏切换仍需要重启进程。
 
 更多实现细节见 [piboard/README.md](piboard/README.md)。

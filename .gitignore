@@ -1,6 +1,7 @@
 # macOS / editor noise
 .DS_Store
 .claude/
+.visual-review/
 
 # Python caches and local test output
 __pycache__/
@@ -21,6 +22,7 @@ env/
 piboard/BUILD_INFO
 piboard/data/state.json
 piboard/data/*.tmp
+handover_summary.md
 
 # Runtime logs / scratch captures
 *.log

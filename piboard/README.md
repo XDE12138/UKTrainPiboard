@@ -9,7 +9,7 @@
 ## 目录
 
 - [项目背景](#项目背景)
-- [v0.1.1 当前状态](#v011-当前状态)
+- [当前版本与验收状态](#当前版本与验收状态)
 - [系统架构](#系统架构)
 - [目录结构](#目录结构)
 - [快速开始](#快速开始)
@@ -32,7 +32,7 @@
 
 **硬件**：树莓派 Zero 2W（ARMv8 四核 1GHz，512MB RAM）+ 7 寸屏幕
 
-**核心问题**：Zero 2W 资源极其有限，传统桌面环境（X11 + Chromium）在其上几乎无法流畅运行。本项目绕开桌面环境，直接使用 pygame SDL2 kmsdrm 后端渲染，将 CPU 静止占用控制在 3% 以内。
+**核心问题**：Zero 2W 资源有限，本项目绕开桌面环境，直接使用 pygame SDL2 kmsdrm 后端渲染，以低静止占用为目标；性能目标不代表当前版本已达标。
 
 **视觉定位**：完全还原英国火车站 LED 点阵报站屏风格——自定义 5×7 / 7×9 点阵字体，每个像素渲染为带高光的圆点，背景 #080808，琥珀色主光 #FF9500，暗点 #1C1000。车站大屏风格是系统内置的第一套「主题」，未来可扩展更多主题。
 
@@ -40,12 +40,14 @@
 
 ---
 
-## v0.1.1 当前状态
+## 当前版本与验收状态
 
+- 当前源码为 `v0.1.2-rc.1`，正式历史标签为 `v0.1.1`。候选版整合了运行审计、视觉优化和字体修正，没有新增页面或数据源。
+- Pi 已验证显示补丁和人工批准的字体补丁，不代表当前源码全部部署。整合版 Pi 验收待完成；候选记录见 [v0.1.2-rc.1](../docs/v0.1.2-rc.1.md)。
 - Web 控制台端口固定为 `8080`，验收检查以 `/api/state` 和 `/api/device-status` 为主。
 - 当前 MVP 是低功耗展示版：`single/mock + cycle`，默认轮换 `overview/train/weather/calendar`，动画关闭。
 - 运行版本可通过 `/api/version` 和 `/api/device-status.version` 回读；Pi 同步脚本会生成 `BUILD_INFO`。
-- 天气无 API Key 时走 Open-Meteo live path；本次 v0.1.1 已用 London 验证无 Key live 返回。
+- 天气无 API Key 时走 Open-Meteo live path；历史 v0.1.1 已用 London 验证无 Key live 返回，不代表此次重新核验了外部服务。
 - Train 的 mock/demo 板面会显示 `DEMO` 和 `Rail demo data (mock)`；当前 `main` 使用 Huxley2 兼容 live endpoint，原 Azure endpoint 保留为 fallback。
 - Calendar 无 iCal URL 时是 mock/demo；本次没有安全公开 iCal 测试源，不写成 live 已验收。
 - 亮度滑杆已通过 host-level dimming overlay 生效，持久化字段是 `device_settings.brightness`，范围 `0.1-1.0`。
@@ -80,8 +82,8 @@ TrainProvider WeatherProvider CalendarProvider CustomProvider
 主线程（pygame 渲染）
   └── 读取 app_state（只读）
 
-Flask 线程（daemon）
-  └── 读写 app_state（RLock 保护）
+Flask 服务线程（daemon）
+  └── HTTP / WebSocket 请求线程，读写 app_state（RLock 保护）
 
 DataFetcher 线程（daemon）
   └── ThreadPoolExecutor(max_workers=2)
@@ -315,7 +317,7 @@ WS   /ws                          # 双向实时通信
 - [x] Pi direct kmsdrm 竖屏验收（`--portrait --display-rotate 90`）
 
 ### Web 控制台
-- [x] Dashboard 风格控制台（Display / Content / Settings 三页导航）
+- [x] 控制台四个视图（页面内容 / 数据源 / 设备状态 / 显示设置）
 - [x] 桌面左侧边栏 + 手机底部导航栏（响应式自动切换）
 - [x] 布局选择 + Slot 绑定 + 一键应用
 - [x] Provider 配置表单（按 schema 自动生成）
@@ -348,7 +350,7 @@ WS   /ws                          # 双向实时通信
 ### 低优先级
 
 - [ ] **更多布局** — 三板（左1+右2）、PiP（画中画）等
-- [ ] **中文字符支持** — 当前点阵字体只覆盖 ASCII 32-126，中文需要另一套方案（TTF 回退或扩展 bitmap）
+- [ ] **中文字符完整视觉审查** — 当前通过随附字体转点阵回退；已抽查混排与字距，未逐字验收整个字库
 - [ ] **插件式 Provider 发现** — 扫描 providers/ 目录自动注册，无需修改 config.py
 - [ ] **多屏输出** — 通过 pygame 多窗口或 SDL 多显示器支持
 - [ ] **状态 WebSocket 推送频率** — 目前仅事件触发推送，可增加定期心跳 + 内容摘要推送
@@ -361,9 +363,11 @@ WS   /ws                          # 双向实时通信
 |------|------|---------|
 | **macOS 端口 5000 冲突** | AirPlay 接收器占用 5000 端口，导致 403 | 已改为 8080；或关闭「AirPlay 接收器」 |
 | **竖屏运行时不可切换** | `pygame.display.set_mode()` 只能在启动时设置尺寸 | 在 Web 控制台 Settings 页修改 orientation，重启后按 `device_settings.orientation` 自动恢复。`--portrait` 仅用于一次性临时调试，不是长期方案 |
-| **部分特殊字符乱码** | 点阵字体仅覆盖 ASCII，°C 等需特殊处理 | 已在 bitmap 中手动定义 `°`，其余特殊字符显示为空白 |
+| **字体覆盖限制** | 原生 bitmap 以 ASCII 和 `°` 为主，其他字符使用随附字体回退 | 常用中英混排已抽查，不能保证所有 Unicode 字形和组合字符 |
 | **Carousel 第一次切换无过渡** | `_prev_surf` 首次为 None | 低影响，仅首次切换无动画 |
-| **Flask 单线程模式下 WebSocket 阻塞** | 每次只能服务一个 WS 客户端 | 控制台通常只有一个用户，实际影响小 |
+| **整合版硬件验收待完成** | Pi 仅验证了定向显示/字体补丁 | 候选源码已启用并发 HTTP、移除 WS 空闲断开；整合部署后仍需复测 |
+| **写入接口与多端冲突** | 错误 API 输入或并发设置仍可能导致 500/覆盖 | 仅限受信任局域网，使用现有表单；详见运行审计 |
+| **日历与可选天气路径** | 重复/跨日事件未完整展开，OWM 概览契约不一致 | 不宣称完整 iCal/OWM 验收；默认天气优先使用 Open-Meteo |
 | **state.json 并发写入** | ~~多个事件同时触发 save() 可能竞争~~ | Task 10 已修复：串行化（persist_lock）+ 临时文件原子替换（os.replace），文件不会出现半写状态 |
 
 ---
@@ -389,7 +393,7 @@ WS   /ws                          # 双向实时通信
 - **Provider 热加载** — 修改 Provider 文件后无需重启（`importlib.reload`）
 - **配置 Schema 版本控制** — 防止升级后 state.json 字段不兼容
 - **日志分级输出** — 当前全部输出到 stdout，可加文件日志轮转
-- **单元测试** — 目前无测试覆盖，核心模块（dot_font、board_renderer、animations）可加 pytest 测试
+- **回归测试扩展** — 已有 unittest、smoke 和离线浏览器检查；继续补写入校验、日历语义及长期硬件运行测试，不引入额外测试框架
 - **Docker 开发环境** — 提供带 SDL 的开发容器，消除开发机环境差异
 
 ### Web 控制台
@@ -433,6 +437,8 @@ WS   /ws                          # 双向实时通信
 
 ## 性能指标
 
+以下为设计目标，不是本候选版的硬件验收结果。历史记录中 RSS 约 119 MiB，未达到 <80MB 目标；最新整合版仍需测量 CPU、内存及长时间运行。
+
 | 指标 | 目标 | 当前实现方案 |
 |------|------|------------|
 | 静止画面 CPU | < 3% | dirty flag 降至 1fps |
@@ -445,7 +451,7 @@ WS   /ws                          # 双向实时通信
 
 ## 如何新增 Provider
 
-只需三步，**零改动现有代码**：
+只需三步；无需修改渲染器，但需要在 `main.py` 注册新 Provider：
 
 **第一步**：新建 `providers/my_provider.py`
 

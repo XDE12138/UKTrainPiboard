@@ -1,15 +1,40 @@
 # Changelog
 
-## Unreleased
+## v0.1.2-rc.1 - 2026-11-12
+
+Integration candidate, not a final Pi-accepted release. The `v0.1.1` tag remains unchanged.
 
 ### Fixed
 
+- Kept HTTP requests responsive alongside WebSocket connections and removed the application-level idle disconnect.
+- Bounded duplicate background refreshes and stopped scheduling before executor shutdown.
+- Made state recovery atomic, restored missing app defaults, preserved legacy manual weather cities, and supported saving to a filename without a directory.
+- Corrected rotated System Status layout, idle carousel/page-flip wakeups, and pagination after row-count changes.
+- Corrected train demo/live/stale labels and calendar cache expiry in Overview.
+- Fixed installer user/port hints and custom service-name installation; removed the unused provider-class registry placeholder.
+- Refined board geometry, mixed-script alignment, measured truncation, static pagination and transition clearing without changing the page/data-source set.
+- Corrected S/0/N/V/W bitmap patterns and minimum inter-character separation; retained native dot dimensions and added a portable before/after review page.
+- Unified console colors, local licensed icons, mobile controls, keyboard focus, navigation scroll retention and loading/error feedback.
+- Included earlier post-v0.1.1 endpoint and console hotfixes already present on main:
 - Switched the default Huxley2-compatible Train live endpoint to `https://national-rail-api.davwheat.dev` after the original Azure endpoint returned HTTP 500.
 - Added `huxley2_base_url` to Train configuration and kept the original Azure endpoint as a fallback.
 
 ### Verified
 
-- BHM live departures returned via the replacement endpoint locally and on the Pi after deployment.
+- Historical endpoint hotfix: BHM live departures returned locally and on Pi; this is not a fresh live-service check for this candidate.
+- Local release/visual smoke checks and runtime/display/font regression checks are reproducible using the commands in `docs/v0.1.2-rc.1.md`.
+- Presentation overlay and the exact human-approved font checksum were verified on Pi separately; 7 font and 9 display tests passed there. Full integration of the runtime fixes remains pending.
+
+### Documentation
+
+- Added runtime audit, visual review, font acceptance and candidate release records with safe evidence.
+- Updated version/readmes to distinguish source candidate, historical release and deployed overlays; excluded private handover notes and runtime state.
+
+### Known Issues
+
+- Full candidate Pi deployment/acceptance has not been performed; no final `v0.1.2` tag is created.
+- Write API input validation, concurrent settings updates, complete iCal recurrence handling and OpenWeatherMap overview compatibility remain open; the console is trusted-LAN only.
+- External live-service availability and hardware performance targets are not established by offline fixtures.
 
 ## v0.1.1 - 2026-05-12
 
