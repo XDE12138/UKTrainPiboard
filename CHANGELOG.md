@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.1.2 - 2026-11-12
+
+### Fixed
+
+- Integrated the runtime, board typography and console fixes from `v0.1.2-rc.1` without adding pages, layouts or data-source types.
+- Rejected malformed/non-object JSON, invalid layouts/slots, source field types/options and invalid settings before mutation in canonical and compatibility REST/WebSocket writes. Invalid WebSocket messages receive an error without closing an otherwise usable connection.
+
+### Verified
+
+- Local and Pi: compile checks, 41 unittest cases and 10 release/visual smoke checks pass. Local console browser checks pass at five desktop/mobile widths.
+- Pi: existing service active/enabled on SDL kmsdrm; five-page API switching keeps the render process alive; private configuration restores exactly. HTTP remains responsive alongside WebSocket connections.
+- Pi: saved-location Open-Meteo fetch and the existing private iCal subscription fetch pass (0 calendar events in the checked window). Train upstream failure is handled visibly as WAIT, not verified live departures.
+- Deployed source files are checksum-verified against the clean commit. Final tag/commit/marker evidence is attached to the GitHub Release; public PNGs are safe offscreen Pi renders, not physical panel photos.
+
+### Documentation
+
+- Added `docs/v0.1.2.md`, a reproducible opt-in Pi acceptance helper and safe hardware-rendered specimens.
+- Updated both README languages and technical-guide status; retained historical candidate/audit records with their original scope.
+
+### Known Issues
+
+- Both Huxley2-compatible endpoints returned HTTP 500 for BHM during acceptance; live train availability is not claimed. No new endpoint/data-source type was added to hide the outage.
+- Complete iCal recurrence/multi-day semantics, OpenWeatherMap overview compatibility and concurrent multi-controller settings conflicts remain out of scope.
+- Console remains unauthenticated, trusted-LAN only. CPU/RSS targets are not fully met; physical panel optics and long-duration soak testing are not certified by offscreen renders.
+
 ## v0.1.2-rc.1 - 2026-11-12
 
 Integration candidate, not a final Pi-accepted release. The `v0.1.1` tag remains unchanged.

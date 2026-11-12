@@ -48,14 +48,14 @@ This detailed technical guide is in Chinese. For a bilingual introduction, setup
 
 ## 当前版本与验收状态
 
-- 当前源码为 `v0.1.2-rc.1`，正式历史标签为 `v0.1.1`。候选版整合了运行审计、视觉优化和字体修正，没有新增页面或数据源。
-- Pi 已验证显示补丁和人工批准的字体补丁，不代表当前源码全部部署。整合版 Pi 验收待完成；候选记录见 [v0.1.2-rc.1](../docs/v0.1.2-rc.1.md)。
+- 当前版本为 `v0.1.2`，整合运行审计、视觉优化和人工批准的字体修正，没有新增页面或数据源。
+- 完整运行修复已在 Pi 通过 41 项回归、10 项 smoke、五页切换及私人配置恢复检查，见 [v0.1.2 验收记录](../docs/v0.1.2.md)。铁路上游仍 HTTP 500，不能把“已部署”理解为所有外部服务可用。
 - Web 控制台端口固定为 `8080`，验收检查以 `/api/state` 和 `/api/device-status` 为主。
 - 当前 MVP 是低功耗展示版：`single/mock + cycle`，默认轮换 `overview/train/weather/calendar`，动画关闭。
 - 运行版本可通过 `/api/version` 和 `/api/device-status.version` 回读；Pi 同步脚本会生成 `BUILD_INFO`。
-- 天气无 API Key 时走 Open-Meteo live path；历史 v0.1.1 已用 London 验证无 Key live 返回，不代表此次重新核验了外部服务。
+- 天气无 API Key 时走 Open-Meteo live path；本次在 Pi 使用已有保存位置获取成功。
 - Train 的 mock/demo 板面会显示 `DEMO` 和 `Rail demo data (mock)`；当前 `main` 使用 Huxley2 兼容 live endpoint，原 Azure endpoint 保留为 fallback。
-- Calendar 无 iCal URL 时是 mock/demo；本次没有安全公开 iCal 测试源，不写成 live 已验收。
+- Calendar 无 iCal URL 时是 mock/demo；本次 Pi 现有私人订阅读取通过，窗口内 0 事件，未公开链接或宣称完整重复/跨日语义验收。
 - 亮度滑杆已通过 host-level dimming overlay 生效，持久化字段是 `device_settings.brightness`，范围 `0.1-1.0`。
 - v0.1.1 验收记录见 `../docs/v0.1.1.md`；v0.1-demo 历史记录见 `../docs/v0.1-demo.md`。
 - `data/state.json` 是本机私有运行态，不能提交；公开示例配置是 `data/state.example.json`。
@@ -371,8 +371,8 @@ WS   /ws                          # 双向实时通信
 | **竖屏运行时不可切换** | `pygame.display.set_mode()` 只能在启动时设置尺寸 | 在 Web 控制台 Settings 页修改 orientation，重启后按 `device_settings.orientation` 自动恢复。`--portrait` 仅用于一次性临时调试，不是长期方案 |
 | **字体覆盖限制** | 原生 bitmap 以 ASCII 和 `°` 为主，其他字符使用随附字体回退 | 常用中英混排已抽查，不能保证所有 Unicode 字形和组合字符 |
 | **Carousel 第一次切换无过渡** | `_prev_surf` 首次为 None | 低影响，仅首次切换无动画 |
-| **整合版硬件验收待完成** | Pi 仅验证了定向显示/字体补丁 | 候选源码已启用并发 HTTP、移除 WS 空闲断开；整合部署后仍需复测 |
-| **写入接口与多端冲突** | 错误 API 输入或并发设置仍可能导致 500/覆盖 | 仅限受信任局域网，使用现有表单；详见运行审计 |
+| **铁路上游不可用** | 本次 BHM 主、备用接口均 HTTP 500 | 显示 WAIT/不可用状态，不冒充 live；服务恢复后按原刷新周期重试 |
+| **写入接口与多端冲突** | 已补结构、类型、枚举校验；多端同时保存仍可能覆盖 | 仅限受信任局域网，优先单一控制端；不是完整权限/业务校验系统 |
 | **日历与可选天气路径** | 重复/跨日事件未完整展开，OWM 概览契约不一致 | 不宣称完整 iCal/OWM 验收；默认天气优先使用 Open-Meteo |
 | **state.json 并发写入** | ~~多个事件同时触发 save() 可能竞争~~ | Task 10 已修复：串行化（persist_lock）+ 临时文件原子替换（os.replace），文件不会出现半写状态 |
 

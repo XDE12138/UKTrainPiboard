@@ -18,7 +18,7 @@ Display weather, personal calendars, UK rail updates and custom text on a retro 
 
 项目面向 Raspberry Pi Zero 2W，使用 Python、pygame 和 SDL2 `kmsdrm` 直接驱动屏幕，无需桌面环境或浏览器；也支持在电脑上窗口预览。真实数据需要配置对应来源，演示数据会明确标注。
 
-当前源码版本：`v0.1.2-rc.1`，显示与运行修复候选版。最近正式标签仍为 `v0.1.1`；候选版尚未完成整合后的 Pi 验收，不等于已发布正式版。
+当前版本：**`v0.1.2`**，显示与运行修复版。完整运行修复已在 Pi 验证，保留用户私有配置；天气和私人日历读取通过，铁路上游当前 HTTP 500，显示 WAIT，不宣称铁路 live 可用。
 
 ### 能展示什么
 
@@ -79,13 +79,14 @@ Environment=SDL_AUDIODRIVER=dummy
 | 页面 | 数据边界 |
 |---|---|
 | Overview | 混合摘要；按各来源的配置与缓存结果标注 LIVE / MOCK / WAIT / STALE |
-| Train | 默认 mock/demo；配置 `data_source=huxley2` 后走 Huxley2 兼容 live endpoint，BHM 已在 post-v0.1.1 hotfix 中验证 |
-| Weather | Open-Meteo live 曾在本地验证，并非本次外部服务复测；使用已保存的位置，OpenWeatherMap 需要用户自己的 API Key |
-| Calendar | 默认 mock/demo；配置用户自己的 iCal 订阅后使用该日历；没有公开测试源，不宣称通用 live 验收完成 |
+| Train | 默认 mock/demo；Pi 的 BHM 配置走 Huxley2，但本次主、备用接口均 HTTP 500，概览为 WAIT；历史成功返回不代表当前可用 |
+| Weather | 本次 Pi 已验证 Open-Meteo live，使用已保存的位置；OpenWeatherMap 需要用户自己的 API Key，未验收 |
+| Calendar | 默认 mock/demo；本次 Pi 使用已有私人订阅读取成功，窗口内 0 事件；不公开链接，不代表重复/跨日日历语义完整验收 |
 | Custom | 手工内容，不是 live 数据 |
 
 ### 验收记录
 
+- **`v0.1.2` 正式版验收：[docs/v0.1.2.md](docs/v0.1.2.md)**。GitHub Release 附最终版本/commit 的脱敏设备验收 JSON。
 - `v0.1.2-rc.1` 整理及待验收项：[docs/v0.1.2-rc.1.md](docs/v0.1.2-rc.1.md)
 - 点阵字体前后对比：[字体审查记录](docs/font-review-2026-11-11.md)；下载仓库后可直接打开 [交互对比页](piboard/review_artifacts/font-review-2026-11-11/index.html)。GitHub 文件页本身不执行该 HTML。
 - [视觉与交互审查](docs/visual-review-2026-11-11.md) / [运行审计与遗留问题](docs/project-audit-2026-11-10.md)
@@ -98,11 +99,12 @@ Environment=SDL_AUDIODRIVER=dummy
 
 ### 当前限制
 
-- 本候选版不新增页面和数据源；Pi 当前仅验证了显示与字体补丁，整合后的运行修复尚待硬件复测。
+- 本版不新增页面和数据源；Pi 的五页切换、整合回归和配置恢复已验证。公开截图是 Pi 离屏渲染的安全示例，不是物理屏幕照片。
 - Calendar 默认配置是 mock；私人订阅不会随源码同步。重复事件和跨日事件尚未完整支持。
 - Train live 依赖公开 Huxley2 兼容服务可用性；当前默认 endpoint 已切到短期替代服务，并保留原 Azure endpoint 作为 fallback。
 - 控制台没有登录保护，只适用于受信任的局域网，不应直接暴露到公网。浏览器定位需要安全访问环境；普通局域网 HTTP 可改用手动城市。
-- 写入 API 的统一输入校验、并发设置冲突及 OpenWeatherMap 概览兼容性仍有已知缺口，详见审计记录。
+- 写入 API 已补结构、字段类型和枚举校验；多端并发设置冲突及 OpenWeatherMap 概览兼容性仍有已知缺口，详见审计记录。
+- 资源占用尚未达到全部设计目标；本次短采样约 6.4% 单核 CPU、115 MiB RSS，不等于长期性能验收。
 - 运行时横竖屏切换仍需要重启进程。
 
 更多实现细节见 [piboard/README.md](piboard/README.md)。
@@ -113,7 +115,7 @@ Environment=SDL_AUDIODRIVER=dummy
 
 PiBoard targets the Raspberry Pi Zero 2W. It renders directly to the screen using Python, pygame and SDL2's `kmsdrm` backend, without a desktop environment or browser on the Pi. A windowed preview is also available on a computer. Live data requires the corresponding sources to be configured; demo data is explicitly labelled.
 
-Current source version: **`v0.1.2-rc.1`**, a release candidate for display and runtime fixes. The latest stable tag remains **`v0.1.1`**. Full acceptance of the integrated candidate on Pi is still pending; this is not a final release.
+Current version: **`v0.1.2`**, a display and runtime fix release. The integrated runtime fixes have been verified on Pi with private configuration preserved. Weather and private calendar fetching passed; both train upstreams currently return HTTP 500, so Overview shows WAIT. Live train availability is not claimed.
 
 ### What It Displays
 
@@ -174,13 +176,14 @@ Environment=SDL_AUDIODRIVER=dummy
 | Page | Data boundary |
 |---|---|
 | Overview | Mixed summary; LIVE / MOCK / WAIT / STALE reflect each configured source and its cached result |
-| Train | Mock/demo by default. `data_source=huxley2` selects the Huxley2-compatible live path; BHM was verified during the earlier post-v0.1.1 hotfix |
-| Weather | Open-Meteo live was verified locally in an earlier check, not retested for this documentation update. The saved location determines the place; OpenWeatherMap requires your own API key |
-| Calendar | Mock/demo by default; a configured iCal subscription uses your calendar. General live acceptance is not claimed without a safe public test feed |
+| Train | Mock/demo by default. The Pi uses Huxley2 for BHM, but both endpoints returned HTTP 500 in this check; Overview shows WAIT. Earlier successful responses do not establish current availability |
+| Weather | Open-Meteo live passed on Pi using the saved location. OpenWeatherMap needs your own API key and remains unverified |
+| Calendar | Mock/demo by default. The existing private subscription fetched successfully on Pi, with 0 events in the current window. Its URL stays private; complete recurrence/multi-day semantics are not claimed |
 | Custom | Manual content, not live data |
 
 ### Acceptance And Review Records
 
+- **[v0.1.2 release acceptance](docs/v0.1.2.md)**. The GitHub Release includes redacted device acceptance JSON for the final version/commit.
 - [v0.1.2-rc.1 candidate and pending checks](docs/v0.1.2-rc.1.md)
 - [Font review and before/after evidence](docs/font-review-2026-11-11.md). After downloading the repository, open the [interactive comparison](piboard/review_artifacts/font-review-2026-11-11/index.html) locally; GitHub's file viewer does not execute the HTML.
 - [Visual and interaction review](docs/visual-review-2026-11-11.md) / [Runtime audit and known gaps](docs/project-audit-2026-11-10.md)
@@ -195,11 +198,12 @@ Never commit `piboard/data/state.json`, `piboard/BUILD_INFO`, private iCal URLs,
 
 ### Current Limitations
 
-- This candidate adds no new pages or data-source types. Only the display and font overlays have been verified on Pi; the integrated runtime fixes still require hardware acceptance.
+- This release adds no pages or data-source types. Five-page switching, integrated regressions and configuration restoration passed on Pi. Public screenshots are safe offscreen Pi renders, not panel photographs.
 - Calendar defaults to mock data. Private subscriptions are not synced with source code. Recurring and multi-day events are not fully supported.
 - Live train data depends on public Huxley2-compatible service availability. The default is a short-term replacement endpoint, with the original Azure endpoint retained as a fallback.
 - The console has no authentication and is intended only for a trusted LAN. Do not expose it directly to the public Internet. Browser geolocation requires a secure context; use manual city entry over ordinary LAN HTTP.
-- Unified write-API validation, concurrent settings conflicts and OpenWeatherMap overview compatibility have known gaps; see the runtime audit.
+- Write APIs now validate object structure, field types and enum values. Concurrent settings conflicts and OpenWeatherMap overview compatibility remain known gaps; see the runtime audit.
+- Resource usage does not meet every design target: a short sample measured about 6.4% of one CPU core and 115 MiB RSS. This is not a long-duration performance certification.
 - Changing between portrait and landscape still requires a process restart.
 
 For implementation details, see the [technical guide](piboard/README.md), whose main body is in Chinese.
